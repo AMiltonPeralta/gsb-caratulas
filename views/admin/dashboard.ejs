@@ -1,0 +1,124 @@
+<%- include('../partials/head', { title: 'Panel', cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'panel' }) %>
+
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1>Candidatos</h1>
+      <p>Carátulas enviadas al directorio y su estado de firma.</p>
+    </div>
+    <div class="page-head__actions">
+      <a class="btn" href="/admin/candidatos/nuevo">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Nuevo candidato
+      </a>
+    </div>
+  </div>
+
+  <% if (ok === 'creado') { %>
+    <div class="flash" style="margin-bottom:18px">Candidato creado. Ya podés agregar firmantes y compartir el link.</div>
+  <% } %>
+  <% if (ok === 'eliminado') { %>
+    <div class="flash" style="margin-bottom:18px">Expediente eliminado: se borraron el CV, los links y los PDFs. El evento quedó registrado en la auditoría.</div>
+  <% } %>
+  <% if (ok === 'todos-eliminados') { %>
+    <div class="flash" style="margin-bottom:18px">Se eliminaron todos los candidatos de la lista y sus archivos asociados.</div>
+  <% } %>
+
+  <section class="stats" aria-label="Resumen">
+    <div class="stat">
+      <div class="stat__label">Candidatos</div>
+      <div class="stat__value"><%= counts.total %></div>
+      <div class="stat__hint">en el último año</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Enviados</div>
+      <div class="stat__value"><%= counts.sent %></div>
+      <div class="stat__hint">esperando firma</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Firma parcial</div>
+      <div class="stat__value"><%= counts.partial %></div>
+      <div class="stat__hint">falta algún director</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Firmados</div>
+      <div class="stat__value"><%= counts.signed %></div>
+      <div class="stat__hint">PDF disponible</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Rechazados</div>
+      <div class="stat__value"><%= counts.rejected %></div>
+      <div class="stat__hint">proceso cerrado</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input class="input" type="search" id="cand-search" placeholder="Buscar por nombre o puesto…" aria-label="Buscar candidato">
+      </div>
+      <span class="tiny muted" id="cand-count"><%= candidates.length %> <%= candidates.length === 1 ? 'candidato' : 'candidatos' %></span>
+      <% if (candidates.length > 0) { %>
+        <form method="post" action="/admin/candidatos/vaciar-todos" style="margin-left:auto" data-confirm="¿Seguro que querés vaciar la lista y eliminar todos los candidatos acumulados? Esta acción no se puede deshacer.">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--danger btn--sm" type="submit" title="Borrar todos los candidatos de la lista">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="vertical-align:-1px;margin-right:3px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Vaciar lista
+          </button>
+        </form>
+      <% } %>
+    </div>
+
+    <% if (candidates.length === 0) { %>
+      <div class="empty">
+        <div class="empty__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3v5h5M10 13h5M10 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Todavía no hay candidatos</h3>
+        <p>Subí el CV y el agente completa los datos y el resumen. Después generás un link de firma para cada director.</p>
+        <a class="btn" href="/admin/candidatos/nuevo">Cargar candidato</a>
+      </div>
+    <% } else { %>
+      <div class="cand-list" id="cand-list">
+        <% candidates.forEach(function (c) { %>
+          <div class="cand-row" data-search="<%= (c.full_name + ' ' + c.position).toLowerCase() %>">
+            <div class="cand-row__main">
+              <span class="thumb"><%= initials(c.full_name) %></span>
+              <div style="min-width:0">
+                <div class="cand-row__name"><%= c.full_name %></div>
+                <div class="cand-row__meta"><%= c.position %><% if (c.client) { %> · <%= c.client %><% } %></div>
+              </div>
+            </div>
+            <div class="cand-row__progress">
+              <span class="dots" aria-hidden="true">
+                <% for (let i = 0; i < Math.max(c.request_count, 1); i++) { %>
+                  <span class="dot <%= i < c.signed_count ? 'dot--on' : '' %>"></span>
+                <% } %>
+              </span>
+              <span>
+                <% if (c.request_count === 0) { %>Sin firmantes<% } else { %><%= c.signed_count %> de <%= c.request_count %> firmas<% } %>
+              </span>
+            </div>
+            <div><span class="pill pill--<%= c.status %>"><%= c.statusLabel %></span></div>
+            <div class="cand-row__date"><%= formatDateTime(c.created_at) %></div>
+            <div class="cand-row__action" style="display:flex;gap:6px;align-items:center">
+              <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= c.id %>">Abrir</a>
+              <form method="post" action="/admin/candidatos/<%= c.id %>/eliminar" style="display:inline;margin:0" data-confirm="¿Seguro que querés eliminar el expediente de <%= c.full_name %>?">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="quick" value="1">
+                <button class="btn btn--ghost btn--sm" type="submit" style="color:var(--danger);padding:6px 9px" title="Eliminar candidato">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="vertical-align:middle"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+      <div class="search__empty" id="cand-empty">No hay candidatos que coincidan con la búsqueda.</div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../partials/foot', { jsFile: 'admin.js' }) %>

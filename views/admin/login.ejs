@@ -1,0 +1,71 @@
+<%- include('../partials/head', { title: 'Ingresar', cssFile: 'admin.css', bodyClass: 'login-page' }) %>
+
+<main class="login">
+  <aside class="login__aside">
+    <div class="brand" style="color:#eaf4f6">
+      <span class="brand__mark" style="background:rgba(255,255,255,.14)">YC</span>
+      <span>
+        Carátulas
+        <span class="brand__sub" style="color:rgba(234,244,246,.65)">Firma electrónica del directorio</span>
+      </span>
+    </div>
+
+    <div class="login__quote">
+      <h2>La carátula llega por WhatsApp. El directorio la firma desde el celular.</h2>
+      <p>Sin imprimir, sin traslados y sin cuentas para los directores. Cada firma queda sellada con fecha, hora y código de verificación.</p>
+
+      <ol class="login__steps">
+        <li><span>1</span> Cargás el candidato y su CV</li>
+        <li><span>2</span> Revisás el resumen generado y agregás firmantes</li>
+        <li><span>3</span> Compartís el link por WhatsApp</li>
+        <li><span>4</span> Descargás el PDF firmado</li>
+      </ol>
+    </div>
+
+    <p class="tiny" style="position:relative;z-index:1;color:rgba(234,244,246,.55)">
+      Ley 25.506 · Firma electrónica con registro de auditoría
+    </p>
+  </aside>
+
+  <section class="login__main">
+    <div class="login__box">
+      <h1>Panel de selección</h1>
+      <p>Ingresá con la clave de administración para gestionar candidatos y firmas.</p>
+
+      <% if (error) { %>
+        <div class="flash flash--warn" style="margin-bottom:16px" role="alert"><%= error %></div>
+      <% } %>
+
+      <form method="post" action="/admin/login" class="stack">
+        <div class="field">
+          <label for="password">Clave</label>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required autofocus placeholder="••••••••">
+        </div>
+        <% if (needsTotp) { %>
+          <div class="field">
+            <label for="code">Código de verificación</label>
+            <input class="input" type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456" required>
+            <span class="hint">Abrí tu app autenticadora y copiá el código de 6 dígitos. Cambia cada 30 segundos.</span>
+          </div>
+        <% } %>
+        <button class="btn btn--block" type="submit">Ingresar al panel</button>
+      </form>
+
+      <div class="login__trust">
+        <span class="login__trust-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 9.5 4.1-1.1 7-5.1 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>
+          <%= secure ? 'Conexión cifrada' : 'Entorno local de prueba' %> · sesión con vencimiento ·
+          auditoría encadenada.
+          <a href="/seguridad">Cómo protegemos los datos</a>
+        </span>
+      </div>
+
+      <p class="login__legal">Acceso exclusivo para <%= adminName %>. Si no tenés la clave, pedísela a Milton. Este panel contiene datos personales de candidatos: no compartas el acceso.</p>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

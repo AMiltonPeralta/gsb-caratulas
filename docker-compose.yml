@@ -1,0 +1,40 @@
+# Producción con HTTPS automático.
+# 1. Copiar .env.example a .env y completar el checklist de docs/SEGURIDAD.md §5.
+# 2. Poner SITE_ADDRESS=caratulas.tudominio.com y BASE_URL=https://caratulas.tudominio.com.
+# 3. docker compose up -d --build
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_PATH: /data/app.db
+      UPLOAD_DIR: /data/uploads
+      BACKUP_DIR: /data/backups
+      TRUST_PROXY: 1
+    volumes:
+      - caratulas-data:/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  caratulas-data:
+  caddy-data:
+  caddy-config:

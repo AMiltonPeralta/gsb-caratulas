@@ -1,0 +1,230 @@
+<%- include('../partials/head', { title: `Carátula · ${candidate.full_name}`, cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'panel' }) %>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="/admin">Candidatos</a><span>/</span>
+    <a href="/admin/candidatos/<%= candidate.id %>"><%= candidate.full_name %></a><span>/</span>
+    <span>Carátula GSB</span>
+  </div>
+
+  <% if (error) { %>
+    <div class="flash flash--warn" style="margin-top:18px"><%= error %></div>
+  <% } %>
+  <% if (ok === 'foto') { %><div class="flash" style="margin-top:18px">Foto del ingreso actualizada.</div><% } %>
+  <% if (ok === 'sin-foto') { %><div class="flash" style="margin-top:18px">No hay foto cargada.</div><% } %>
+  <% if (ok === 'foto-invalida') { %><div class="flash flash--warn" style="margin-top:18px">La foto tiene que ser JPG o PNG de hasta 5 MB.</div><% } %>
+
+  <header class="cand-head">
+    <span class="thumb cand-head__avatar"><%= candidate.full_name.slice(0, 1).toUpperCase() %></span>
+    <div>
+      <h1>Carátula de Ingreso GSB</h1>
+      <p class="cand-head__meta">Completá los datos que faltan del CV. La carátula es fija: sólo se editan los campos de abajo.</p>
+    </div>
+    <div class="cand-head__actions">
+      <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>">Volver al expediente</a>
+      <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver PDF</a>
+    </div>
+  </header>
+
+  <% if (!completeness.complete) { %>
+    <div class="flash flash--warn" style="margin-top:18px">
+      <strong>Faltan datos obligatorios para enviar a firmas:</strong>
+      <%= completeness.required.join(' · ') %>.
+    </div>
+  <% } %>
+
+  <!-- Foto del ingreso -->
+  <section class="card" style="margin-top:18px">
+    <div class="card__head">
+      <div>
+        <h2>Foto del ingreso</h2>
+        <p>JPG o PNG de hasta 5 MB. Se muestra en la carátula y en el PDF.</p>
+      </div>
+    </div>
+    <div class="card__body gsb-photo-admin">
+      <div class="gsb-photo<%= candidate.photo_path ? ' gsb-photo--con-foto' : '' %>">
+        <% if (candidate.photo_path) { %>
+          <img src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+        <% } else { %>
+          <div class="gsb-photo__placeholder" aria-hidden="true">
+            <span class="gsb-photo__icon">＋</span>
+            <span class="gsb-photo__tx">Foto del ingreso</span>
+          </div>
+        <% } %>
+      </div>
+      <div class="stack" style="gap:10px">
+        <form method="post" action="/admin/candidatos/<%= candidate.id %>/foto" enctype="multipart/form-data" class="share" style="max-width:520px">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input class="input" type="file" name="photo" accept="image/png,image/jpeg" required>
+          <button class="btn btn--sm" type="submit">Subir foto</button>
+        </form>
+        <% if (candidate.photo_path) { %>
+          <form method="post" action="/admin/candidatos/<%= candidate.id %>/foto/eliminar" data-confirm="¿Quitar la foto del ingreso?">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn--ghost btn--sm" type="submit">Quitar foto</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <form class="gsb-form" method="post" action="/admin/candidatos/<%= candidate.id %>/caratula" style="margin-top:18px">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">1</span> Datos del postulante</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-grid gsb-g2">
+          <div class="gsb-field gsb-field--full">
+            <label class="gsb-field__label" for="c-name">Postulante (apellido, nombre) *</label>
+            <input class="input" id="c-name" name="full_name" value="<%= gsb.full_name %>" maxlength="140" required placeholder="APELLIDO, NOMBRE">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-age">Edad</label>
+            <input class="input" id="c-age" name="age" value="<%= gsb.age %>" maxlength="40" placeholder="Ej.: 31 años">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-branch">Sucursal / Localidad *</label>
+            <select class="input" id="c-branch" name="branch" required>
+              <option value="">Elegir sucursal</option>
+              <% GSB_BRANCHES.forEach(function (branch) { %>
+                <option value="<%= branch %>" <%= gsb.branch === branch ? 'selected' : '' %>><%= branch %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-selected">Seleccionado por</label>
+            <input class="input" id="c-selected" name="selected_by" value="<%= gsb.selected_by %>" maxlength="140" placeholder="APELLIDO, NOMBRE">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-test">Prueba técnica</label>
+            <input class="input" id="c-test" name="technical_test" value="<%= gsb.technical_test %>" maxlength="120" placeholder="Resultado / N/A">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-fit">Fit cultural</label>
+            <input class="input" id="c-fit" name="cultural_fit" value="<%= gsb.cultural_fit %>" maxlength="80" placeholder="Ej.: 8/10">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-function">Función</label>
+            <input class="input" id="c-function" name="job_function" value="<%= gsb.job_function %>" maxlength="140" placeholder="Ej.: Asesor">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-sector">Sector</label>
+            <input class="input" id="c-sector" name="sector" value="<%= gsb.sector %>" maxlength="120" placeholder="Ej.: Repuestos">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-area">Área</label>
+            <input class="input" id="c-area" name="area" value="<%= gsb.area %>" maxlength="140" placeholder="Ej.: Comercial">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-national">Responsable nacional</label>
+            <input class="input" id="c-national" name="national_manager" value="<%= gsb.national_manager %>" maxlength="140" placeholder="APELLIDO, NOMBRE">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-bmanager">Responsable sector / sucursal</label>
+            <input class="input" id="c-bmanager" name="branch_manager" value="<%= gsb.branch_manager %>" maxlength="140" placeholder="APELLIDO, NOMBRE">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-leader">Líder / Tutor directo</label>
+            <input class="input" id="c-leader" name="direct_leader" value="<%= gsb.direct_leader %>" maxlength="140" placeholder="APELLIDO, NOMBRE">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">2</span> Fuentes de reclutamiento</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-grid gsb-g2 gsb-sources-layout">
+          <div class="gsb-medios">
+            <% GSB_SOURCES.forEach(function (source) { %>
+              <% const checked = (gsb.sources || []).includes(source); %>
+              <label class="gsb-medio<%= checked ? ' gsb-medio--on' : '' %>">
+                <input type="checkbox" name="recruitment_sources" value="<%= source %>" <%= checked ? 'checked' : '' %>>
+                <span class="gsb-check<%= checked ? ' gsb-check--on' : '' %>" aria-hidden="true"></span>
+                <span><%= source %></span>
+              </label>
+            <% }) %>
+          </div>
+          <div>
+            <div class="gsb-field">
+              <div class="gsb-field__label">Tipo de puesto *</div>
+              <div class="gsb-toggle-edit">
+                <label><input type="radio" name="position_type" value="nuevo" <%= gsb.position_type === 'nuevo' ? 'checked' : '' %> required><span>Puesto nuevo</span></label>
+                <label><input type="radio" name="position_type" value="reemplazo" <%= gsb.position_type === 'reemplazo' ? 'checked' : '' %>><span>Reemplazo</span></label>
+              </div>
+            </div>
+            <div class="gsb-field gsb-only-reemplazo">
+              <label class="gsb-field__label" for="c-replaces">Reemplaza a (apellido, nombre)</label>
+              <input class="input" id="c-replaces" name="replaces_name" value="<%= gsb.replaces_name %>" maxlength="140" placeholder="APELLIDO, NOMBRE">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">3</span> Condiciones de contratación</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-grid gsb-g3">
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-agreement">Categoría convenio</label>
+            <input class="input" id="c-agreement" name="agreement_category" value="<%= gsb.agreement_category %>" maxlength="120" placeholder="Ej.: Vendedor A">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-gsbcat">Categoría Grúas San Blas</label>
+            <input class="input" id="c-gsbcat" name="gsb_category" value="<%= gsb.gsb_category %>" maxlength="80" placeholder="Ej.: 6.5">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-schedule">Horario</label>
+            <input class="input" id="c-schedule" name="schedule" value="<%= gsb.schedule %>" maxlength="120" placeholder="Ej.: 8.00 a 18 hs">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-cct">CCT</label>
+            <input class="input" id="c-cct" name="cct" value="<%= gsb.cct %>" maxlength="120" placeholder="Ej.: Comercio">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-overtime">Horas extra</label>
+            <select class="input" id="c-overtime" name="overtime">
+              <option value="">—</option>
+              <option value="NO" <%= gsb.overtime === 'NO' ? 'selected' : '' %>>NO</option>
+              <option value="SI" <%= gsb.overtime === 'SI' ? 'selected' : '' %>>SI</option>
+            </select>
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-card">Tarjeta corporativa</label>
+            <select class="input" id="c-card" name="corporate_card">
+              <option value="">—</option>
+              <option value="NO" <%= gsb.corporate_card === 'NO' ? 'selected' : '' %>>NO</option>
+              <option value="SI" <%= gsb.corporate_card === 'SI' ? 'selected' : '' %>>SI</option>
+            </select>
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-gross">Sueldo bruto ($)</label>
+            <input class="input" id="c-gross" name="gross_salary" value="<%= gsb.gross_salary %>" maxlength="40" inputmode="numeric" placeholder="0">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-net">Sueldo neto ($)</label>
+            <input class="input" id="c-net" name="net_salary" value="<%= gsb.net_salary %>" maxlength="40" inputmode="numeric" placeholder="0">
+          </div>
+          <div class="gsb-field">
+            <label class="gsb-field__label" for="c-va">Valor agregado (%)</label>
+            <input class="input" id="c-va" name="value_added" value="<%= gsb.value_added %>" maxlength="40" inputmode="decimal" placeholder="0,00">
+          </div>
+          <div class="gsb-field gsb-field--full">
+            <label class="gsb-field__label" for="c-obs">Observaciones</label>
+            <textarea class="textarea" id="c-obs" name="observations" rows="3" maxlength="500" placeholder="Ej.: Prepaga + vehículo asignado + notebook + esquema de comisiones"><%= gsb.observations %></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="gsb-form__actions">
+      <a class="btn btn--ghost" href="/admin/candidatos/<%= candidate.id %>">Cancelar</a>
+      <button class="btn" type="submit">Guardar carátula</button>
+    </div>
+  </form>
+</main>
+
+<%- include('../partials/foot', { jsFile: 'admin.js' }) %>

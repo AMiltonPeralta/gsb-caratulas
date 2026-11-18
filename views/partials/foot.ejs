@@ -1,0 +1,11 @@
+  <% if (typeof showFooter === 'undefined' || showFooter) { %>
+  <footer class="site-foot">
+    <div class="container">
+      Carátulas y firmas · <span class="muted">Documento de uso interno</span> ·
+      <a href="/seguridad">Seguridad y privacidad</a>
+    </div>
+  </footer>
+  <% } %>
+  <script src="/<%= typeof jsFile !== 'undefined' && jsFile ? jsFile : 'admin.js' %>?v=<%= Date.now() %>" defer></script>
+</body>
+</html>

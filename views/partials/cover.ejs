@@ -1,0 +1,208 @@
+<%
+  const f1 = [
+    ['Postulante (apellido, nombre)', gsb.full_name, true],
+    ['Edad', gsb.age],
+    ['Sucursal / Localidad', gsb.branch],
+    ['Seleccionado por', gsb.selected_by],
+    ['Prueba técnica', gsb.technical_test],
+    ['Fit cultural', gsb.cultural_fit],
+    ['Función', gsb.job_function],
+    ['Sector', gsb.sector],
+    ['Área', gsb.area],
+    ['Responsable nacional', gsb.national_manager],
+    ['Responsable sector / sucursal', gsb.branch_manager],
+    ['Líder / Tutor directo', gsb.direct_leader],
+  ];
+  const f3 = [
+    ['Categoría convenio', gsb.agreement_category],
+    ['Categoría Grúas San Blas', gsb.gsb_category],
+    ['Horario', gsb.schedule],
+    ['CCT', gsb.cct],
+    ['Horas extra', gsb.overtime, 'choice'],
+    ['Tarjeta corporativa', gsb.corporate_card, 'choice'],
+    ['Sueldo bruto', gsb.gross_salary ? formatMoney(gsb.gross_salary) : ''],
+    ['Sueldo neto', gsb.net_salary ? formatMoney(gsb.net_salary) : ''],
+    ['Valor agregado', gsb.value_added ? `${gsb.value_added} %` : '', 'accent'],
+  ];
+  const groups = (signatureGroups && signatureGroups.groups) || [];
+  const extras = (signatureGroups && signatureGroups.extras) || [];
+%>
+<article class="gsb-cover" aria-label="Carátula de Ingreso de Grúas San Blas">
+
+  <header class="gsb-hdr">
+    <div class="gsb-hdr__logo">
+      GRÚAS SAN BLAS
+      <span>Selección &amp; Desarrollo · Onboarding Digital</span>
+    </div>
+    <div class="gsb-hdr__doc">
+      <div class="gsb-hdr__t1">Carátula de Ingreso</div>
+      <div class="gsb-hdr__t2">Aprobación de incorporación · Uso interno</div>
+    </div>
+  </header>
+
+  <div class="gsb-body">
+
+    <div class="gsb-banner">
+      <span class="gsb-banner__dot" aria-hidden="true"></span>
+      <div>
+        Documento listo para firmas
+        <small>Los datos fueron completados por Selección &amp; Desarrollo y están bloqueados. Cada aprobador sólo completa fecha, firma y aclaración en su bloque.</small>
+      </div>
+    </div>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">1</span> Datos del postulante</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-postulante">
+          <div class="gsb-photo<%= photoUrl ? ' gsb-photo--con-foto' : '' %>">
+            <% if (photoUrl) { %>
+              <img src="<%= photoUrl %>" alt="Foto de <%= candidate.full_name %>">
+            <% } else { %>
+              <div class="gsb-photo__placeholder" aria-hidden="true">
+                <span class="gsb-photo__icon">＋</span>
+                <span class="gsb-photo__tx">Foto del ingreso</span>
+              </div>
+            <% } %>
+          </div>
+          <div class="gsb-grid gsb-g2">
+            <% f1.forEach(function (f) { %>
+              <div class="gsb-field<%= f[2] ? ' gsb-field--full' : '' %>">
+                <div class="gsb-field__label"><%= f[0] %></div>
+                <div class="gsb-field__value<%= f[1] ? '' : ' gsb-field__value--empty' %>"><%= f[1] || '—' %></div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">2</span> Fuentes de reclutamiento</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-grid gsb-g2 gsb-sources-layout">
+          <div class="gsb-medios">
+            <% GSB_SOURCES.forEach(function (source) { %>
+              <% const checked = (gsb.sources || []).includes(source); %>
+              <div class="gsb-medio<%= checked ? ' gsb-medio--on' : '' %>" aria-pressed="<%= checked %>">
+                <span class="gsb-check<%= checked ? ' gsb-check--on' : '' %>" aria-hidden="true"></span>
+                <span><%= source %></span>
+              </div>
+            <% }) %>
+          </div>
+          <div>
+            <div class="gsb-field">
+              <div class="gsb-field__label">Tipo de puesto</div>
+              <div class="gsb-toggle">
+                <span class="<%= gsb.position_type === 'nuevo' ? 'is-on' : '' %>">Puesto nuevo</span>
+                <span class="<%= gsb.position_type === 'reemplazo' ? 'is-on' : '' %>">Reemplazo</span>
+              </div>
+            </div>
+            <% if (gsb.position_type === 'reemplazo' && gsb.replaces_name) { %>
+              <div class="gsb-field">
+                <div class="gsb-field__label">Reemplaza a (apellido, nombre)</div>
+                <div class="gsb-field__value"><%= gsb.replaces_name %></div>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">3</span> Condiciones de contratación</div>
+      <div class="gsb-sec__body">
+        <div class="gsb-grid gsb-g3">
+          <% f3.forEach(function (f) { %>
+            <% const kind = f[2]; %>
+            <div class="gsb-field<%= kind === 'accent' ? ' gsb-field--va' : '' %>">
+              <div class="gsb-field__label"><%= f[0] %></div>
+              <% if (kind === 'choice') { %>
+                <div class="gsb-toggle gsb-toggle--read" role="group" aria-label="<%= f[0] %>">
+                  <% ['NO', 'SI'].forEach(function (option) { %>
+                    <span class="<%= String(f[1] || '').toUpperCase() === option ? 'is-on' : '' %>"><%= option %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="gsb-field__value<%= f[1] ? '' : ' gsb-field__value--empty' %>"><%= f[1] || '—' %></div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+        <div class="gsb-field gsb-field--obs">
+          <div class="gsb-field__label">Observaciones</div>
+          <div class="gsb-field__value<%= gsb.observations ? '' : ' gsb-field__value--empty' %>"><%= gsb.observations || '—' %></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsb-sec">
+      <div class="gsb-sec__title"><span class="gsb-num">4</span> Aprobaciones y firmas</div>
+      <div class="gsb-sec__body">
+        <p class="gsb-nota">Cada aprobador firma electrónicamente en su bloque, con el dedo (celular) o el mouse. La fecha, la hora y el código SHA-256 quedan registrados en la constancia de auditoría.</p>
+
+        <% groups.forEach(function (group) { %>
+          <div class="gsb-firmas-grupo">
+            <div class="gsb-firmas-titulo"><%= group.label %></div>
+            <div class="gsb-firmas-fila gsb-ff<%= group.blocks.length %>">
+              <% group.blocks.forEach(function (block) { %>
+                <% const r = block.request; %>
+                <% const img = r && r.signature ? r.signature.imageUrl : null; %>
+                <div class="gsb-bloque<%= r && r.id === highlightRequestId ? ' gsb-bloque--actual' : '' %>"<% if (r) { %> data-request-id="<%= r.id %>"<% } %>>
+                  <div class="gsb-bloque__rol"><%= block.role %></div>
+                  <% if (r) { %>
+                    <div class="gsb-bloque__nombre"><%= r.signer.name %></div>
+                    <% if (r.signature) { %>
+                      <% if (img) { %><img class="gsb-bloque__firma" src="<%= img %>" alt="Firma de <%= r.signer.name %>"><% } %>
+                      <div class="gsb-bloque__fecha">Firmado <%= formatDateTime(r.signature.signed_at) %></div>
+                      <% const dniVal = r.signature.dni || (r.signer && r.signer.dni); %>
+                      <% if (dniVal) { %><div class="gsb-bloque__dni" style="font-size:8.5px;color:var(--gsb-muted);font-weight:600">DNI: <%= dniVal %></div><% } %>
+                      <div class="gsb-bloque__hash mono"><%= shortHash(r.signature.signature_hash || r.signature.document_hash) %></div>
+                    <% } else { %>
+                      <div class="gsb-bloque__pendiente">
+                        <%= r.id === highlightRequestId ? 'Pendiente de tu firma' : (r.status === 'expired' ? 'Link vencido' : (r.status === 'revoked' ? 'Solicitud anulada' : 'Pendiente de firma')) %>
+                      </div>
+                    <% } %>
+                  <% } else { %>
+                    <div class="gsb-bloque__vacio">Sin asignar</div>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% }) %>
+
+        <% if (extras.length) { %>
+          <div class="gsb-firmas-grupo">
+            <div class="gsb-firmas-titulo">Otras firmas</div>
+            <div class="gsb-firmas-fila gsb-ff2">
+              <% extras.forEach(function (r) { %>
+                <% const img = r.signature ? r.signature.imageUrl : null; %>
+                <div class="gsb-bloque<%= r.id === highlightRequestId ? ' gsb-bloque--actual' : '' %>" data-request-id="<%= r.id %>">
+                  <div class="gsb-bloque__rol"><%= r.signer.role %></div>
+                  <div class="gsb-bloque__nombre"><%= r.signer.name %></div>
+                  <% if (r.signature) { %>
+                    <% if (img) { %><img class="gsb-bloque__firma" src="<%= img %>" alt="Firma de <%= r.signer.name %>"><% } %>
+                    <div class="gsb-bloque__fecha">Firmado <%= formatDateTime(r.signature.signed_at) %></div>
+                    <% const dniValExtra = r.signature.dni || (r.signer && r.signer.dni); %>
+                    <% if (dniValExtra) { %><div class="gsb-bloque__dni" style="font-size:8.5px;color:var(--gsb-muted);font-weight:600">DNI: <%= dniValExtra %></div><% } %>
+                    <div class="gsb-bloque__hash mono"><%= shortHash(r.signature.signature_hash || r.signature.document_hash) %></div>
+                  <% } else { %>
+                    <div class="gsb-bloque__pendiente">Pendiente de firma</div>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <p class="gsb-legal"><%= template.legalText || '' %></p>
+
+    <div class="gsb-pie">
+      <span><%= template.footerNote || 'Grúas San Blas · Selección & Desarrollo · Documento de uso interno' %></span>
+      <span>CAR-<%= String(candidate.id).padStart(5, '0') %></span>
+    </div>
+
+  </div>
+</article>

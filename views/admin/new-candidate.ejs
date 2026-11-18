@@ -1,0 +1,68 @@
+<%- include('../partials/head', { title: 'Nuevo candidato', cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'nuevo' }) %>
+
+<main class="container container--narrow">
+  <div class="breadcrumb">
+    <a href="/admin">Candidatos</a><span>/</span><span>Nuevo</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>Nuevo ingreso GSB</h1>
+      <p>Subí el CV y el agente completa lo que puede de la Carátula de Ingreso. Lo que falta se termina de cargar desde el panel.</p>
+    </div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="flash flash--warn" style="margin-bottom:18px" role="alert"><%= error %></div>
+  <% } %>
+
+  <form class="card" method="post" action="/admin/candidatos" enctype="multipart/form-data" data-analyze>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card__head">
+      <div>
+        <h2>CV del candidato</h2>
+        <p>El CV es lo único que hace falta para crear el candidato.</p>
+      </div>
+    </div>
+
+    <div class="card__body stack">
+      <div class="field">
+        <label for="cv">CV en PDF *</label>
+        <label class="cv-drop" for="cv" id="cv-drop">
+          <span class="cv-drop__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </span>
+          <span class="cv-drop__text">
+            <strong id="cv-name">Elegir archivo</strong>
+            <span class="hint">PDF con texto seleccionable · hasta 12 MB</span>
+          </span>
+          <input type="file" id="cv" name="cv" accept=".pdf,application/pdf" class="visually-hidden" required>
+        </label>
+        <span class="hint">El PDF tiene que permitir seleccionar texto. Los CV escaneados como imagen todavía no se pueden leer.</span>
+      </div>
+
+      <div class="flash flash--info">
+        <strong>Qué hace el agente al leer el CV</strong>
+        <p style="margin:6px 0 0">Completa nombre y apellido, edad si figura, sucursal si se menciona, función, sector, área, remuneración pretendida y disponibilidad. También redacta el resumen que va como anexo de la carátula.</p>
+        <p style="margin:6px 0 0">Después vas a la carátula GSB para completar fuentes de reclutamiento, condiciones de contratación y responsables. El resumen siempre queda editable.</p>
+      </div>
+
+      <div class="consent" style="cursor:default">
+        <span><strong>Proveedor de IA activo:</strong> <span class="pill pill--plain pill--sent"><%= aiProvider %></span><br>
+        <span class="hint">Si el proveedor falla, el sistema completa lo que puede con una lectura básica del CV y te avisa qué revisar.</span></span>
+      </div>
+
+      <p class="hint" data-analyze-note hidden>Leyendo el CV y redactando el resumen. Puede tardar unos segundos…</p>
+    </div>
+
+    <div class="card__head" style="border-top:1px solid var(--line);border-bottom:0">
+      <a class="btn btn--ghost" href="/admin">Cancelar</a>
+      <div class="card__actions">
+        <button class="btn" type="submit" data-analyze-submit>Analizar CV y crear candidato</button>
+      </div>
+    </div>
+  </form>
+</main>
+
+<%- include('../partials/foot', { jsFile: 'admin.js' }) %>

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gsb-caratulas
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_PASSWORD
+        value: yohita2026
+      - key: SESSION_SECRET
+        value: 7f3b2c1e9a4d8f6b0c5e2a7d9f1b4c8e6a3d0f2b5c9e7a1d4f8b6c2e0a9d5f3b

@@ -1,0 +1,458 @@
+<%- include('../partials/head', { title: candidate.full_name, cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'panel' }) %>
+<% const isRejected = Boolean(candidate.rejected_at); %>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="/admin">Candidatos</a><span>/</span><span><%= candidate.full_name %></span>
+  </div>
+
+  <% if (ok) { %>
+    <div class="flash" style="margin-top:18px">
+      <% if (ok === 'creado') { %>Candidato creado. El agente completó lo que pudo del CV y redactó el resumen.<% } %>
+      <% if (ok === 'reanalizado') { %>Volvimos a analizar el CV y actualizamos los datos y el resumen.<% } %>
+      <% if (ok === 'guardado') { %>Los datos se guardaron correctamente.<% } %>
+      <% if (ok === 'firmante') { %>Firmante agregado. Ya tenés un link único para compartirle.<% } %>
+      <% if (ok === 'anulado') { %>La solicitud de firma quedó anulada.<% } %>
+      <% if (ok === 'reenviado') { %>Se renovó el vencimiento del link.<% } %>
+      <% if (ok === 'sin-cv') { %>Este candidato no tiene un CV adjunto para volver a analizar.<% } %>
+      <% if (ok === 'cv-ilegible') { %>No pudimos leer texto del CV. Puede ser un PDF escaneado como imagen.<% } %>
+      <% if (ok === 'firmado-no-editable') { %>Ya hay firmas registradas: no se pueden cambiar los datos del documento firmado.<% } %>
+      <% if (ok === 'firmado-no-anulable') { %>Esa solicitud ya está firmada y no se anula: la firma queda como evidencia. Si necesitás otro firmante, agregá uno nuevo.<% } %>
+      <% if (ok === 'confirmacion-invalida') { %>Para eliminar el expediente hay que escribir el nombre completo tal como figura en la carátula. No se borró nada.<% } %>
+      <% if (ok === 'firmado-no-eliminable') { %>Este expediente tiene firmas registradas y no se puede eliminar: la firma es evidencia del proceso.<% } %>
+      <% if (ok === 'caratula') { %>La carátula GSB se guardó y el PDF se regeneró.<% } %>
+      <% if (ok === 'caratula-incompleta') { %>Antes de agregar firmantes completá los datos obligatorios de la carátula: postulante, sucursal, una fuente de reclutamiento y tipo de puesto.<% } %>
+      <% if (ok === 'rol-ocupado') { %>Ese rol ya tiene una firma o un link activo en esta carátula. Elegí otro rol o anulá el link existente.<% } %>
+      <% if (ok === 'sin-nombre') { %>Escribí el nombre del firmante para generar el link.<% } %>
+      <% if (ok === 'rechazado') { %>Este candidato fue rechazado por el Directorio: no se pueden generar ni reactivar links, ni editar la carátula.<% } %>
+    </div>
+  <% } %>
+  <% if (typeof aviso !== 'undefined' && aviso === 'revisar') { %>
+    <div class="flash flash--warn" style="margin-top:18px">El agente completó lo que pudo leer del CV. Revisá los datos y corregí lo que falte antes de compartir la carátula.</div>
+  <% } %>
+  <% if (iaError) { %>
+    <div class="flash flash--warn" style="margin-top:18px">El candidato se creó, pero el resumen automático falló. Podés generarlo o escribirlo desde esta pantalla.</div>
+  <% } %>
+
+  <header class="cand-head">
+    <% if (candidate.photo_path) { %>
+      <img class="thumb cand-head__avatar cand-head__photo" src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+    <% } else { %>
+      <span class="thumb cand-head__avatar"><%= initials(candidate.full_name) %></span>
+    <% } %>
+    <div>
+      <h1><%= candidate.full_name %></h1>
+      <p class="cand-head__meta"><%= gsb.job_function || candidate.position %><% if (gsb.sector) { %> · <%= gsb.sector %><% } %><% if (gsb.branch) { %> · <%= gsb.branch %><% } %> · Alta <%= formatDateTime(candidate.created_at) %></p>
+    </div>
+    <div class="cand-head__actions">
+      <% if (!isRejected) { %>
+        <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula">Editar carátula GSB</a>
+        <a class="btn btn--soft btn--sm" href="/admin/candidatos/<%= candidate.id %>/informe-entrevista">Informe de entrevista</a>
+      <% } %>
+      <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver PDF</a>
+      <% if (requests.some(function (r) { return r.signature; })) { %>
+        <a class="btn btn--sm" href="/admin/candidatos/<%= candidate.id %>/firmado.pdf">Descargar PDF firmado</a>
+      <% } %>
+      <span class="pill pill--<%= status %>" style="align-self:center"><%= statusLabel %></span>
+    </div>
+  </header>
+
+  <% if (isRejected) { %>
+    <div class="flash flash--warn" style="margin-top:18px">
+      <div>
+        <strong>Candidato rechazado por el Directorio.</strong>
+        <%= candidate.rejected_by || 'Directorio' %> · <%= formatDateTime(candidate.rejected_at) %>.
+        <% if (candidate.rejection_reason) { %>Motivo: <%= candidate.rejection_reason %>.<% } %>
+        Los links pendientes quedaron anulados y las firmas ya emitidas se conservan como evidencia.
+      </div>
+    </div>
+  <% } %>
+
+  <div class="detail">
+    <div class="stack">
+      <!-- Carátula GSB -->
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Carátula de Ingreso GSB</h2>
+            <p>Diseño fijo de Grúas San Blas. Lo que el CV no trae se completa acá antes de compartir el link.</p>
+          </div>
+          <div class="card__actions">
+            <% if (gsbCompleteness.complete) { %>
+              <span class="pill pill--plain pill--signed">Lista para firmas</span>
+            <% } else { %>
+              <span class="pill pill--plain pill--expired">Faltan datos</span>
+            <% } %>
+          </div>
+        </div>
+        <div class="card__body">
+          <% if (!gsbCompleteness.complete) { %>
+            <div class="flash flash--warn" style="margin-bottom:12px">
+              <strong>Obligatorio antes de enviar:</strong> <%= gsbCompleteness.required.join(' · ') %>.
+            </div>
+          <% } %>
+          <% if (gsbCompleteness.recommended.length) { %>
+            <p class="hint" style="margin-bottom:12px">Conviene completar: <%= gsbCompleteness.recommended.join(' · ') %>.</p>
+          <% } %>
+          <div class="gsb-summary">
+            <div class="gsb-summary__photo">
+              <% if (candidate.photo_path) { %>
+                <img src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+              <% } else { %>
+                <span class="gsb-summary__empty">Sin foto</span>
+              <% } %>
+            </div>
+            <dl class="kv">
+              <div class="kv__row"><dt class="kv__label">Función</dt><dd class="kv__value"><%= gsb.job_function || '—' %></dd></div>
+              <div class="kv__row"><dt class="kv__label">Sucursal</dt><dd class="kv__value"><%= gsb.branch || '—' %></dd></div>
+              <div class="kv__row"><dt class="kv__label">Fuentes</dt><dd class="kv__value"><%= gsb.sources.length ? gsb.sources.join(', ') : '—' %></dd></div>
+              <div class="kv__row"><dt class="kv__label">Tipo de puesto</dt><dd class="kv__value"><%= gsb.position_type_label || '—' %></dd></div>
+              <div class="kv__row"><dt class="kv__label">Sueldo bruto</dt><dd class="kv__value"><%= gsb.gross_salary ? formatMoney(gsb.gross_salary) : '—' %></dd></div>
+            </dl>
+          </div>
+          <div class="summary-editor__bar" style="margin-top:14px">
+            <% if (!isRejected) { %>
+              <a class="btn btn--soft btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula">Completar / editar carátula</a>
+            <% } else { %>
+              <span class="hint">Carátula cerrada por rechazo: queda como constancia.</span>
+            <% } %>
+            <span class="hint">CAR-<%= String(candidate.id).padStart(5, '0') %></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resumen -->
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Resumen del candidato</h2>
+            <p>Va como anexo de la carátula GSB. Se puede regenerar o editar antes de firmar.</p>
+          </div>
+          <div class="card__actions">
+            <span class="pill pill--plain pill--signed" title="Proveedor de IA configurado"><%= aiProvider %></span>
+          </div>
+        </div>
+        <div class="card__body summary-editor" data-summary-editor data-candidate-id="<%= candidate.id %>">
+          <textarea class="textarea" data-summary-input rows="12" maxlength="8000" aria-label="Resumen del candidato"><%= candidate.summary_text || '' %></textarea>
+          <div class="summary-editor__bar">
+            <button class="btn btn--soft btn--sm" type="button" data-summary-generate>Generar con IA</button>
+            <button class="btn btn--ghost btn--sm" type="button" data-summary-toggle>Ver vista previa</button>
+            <span class="tiny" data-summary-status>Cambios sin guardar</span>
+            <button class="btn btn--sm" type="button" data-summary-save style="margin-left:auto">Guardar resumen</button>
+          </div>
+          <div class="summary-preview" data-summary-preview hidden><%= summaryHtml(candidate.summary_text) %></div>
+          <p class="hint" data-summary-error hidden style="color:var(--danger)"></p>
+        </div>
+      </section>
+
+      <!-- Informe de entrevista -->
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Informe de entrevista · Modelo de Talento GSB</h2>
+            <p>Evaluación de competencias cardinales, específicas y de liderazgo diseñada por Yoha. Se anexa al PDF ejecutivo.</p>
+          </div>
+          <div class="card__actions">
+            <a class="btn btn--sm" href="/admin/candidatos/<%= candidate.id %>/informe-entrevista">Completar / ver informe</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Firmantes -->
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Firmantes</h2>
+            <p><%= requests.filter(function (r) { return r.effective_status === 'signed'; }).length %> de <%= requests.length %> firmas completadas<% if (requests.length === 0) { %> · todavía no agregaste firmantes<% } %></p>
+          </div>
+        </div>
+
+        <% if (requests.length === 0) { %>
+          <div class="card__body" style="padding-bottom:0">
+            <div class="flash flash--info">
+              Agregá a los directores que tienen que firmar. Cada uno recibe un link único, sin usuario ni contraseña.
+            </div>
+          </div>
+        <% } %>
+
+        <% requests.forEach(function (r) { %>
+          <article class="signer" data-request-id="<%= r.id %>">
+            <div class="signer__top">
+              <span class="thumb" style="width:32px;height:32px;border-radius:8px;font-size:11px"><%= initials(r.signer.name) %></span>
+              <div>
+                <div class="signer__name"><%= r.signer.name %></div>
+                <div class="signer__role"><%= scopeLabel(r.signer.scope || 'central') %> · <%= r.signer.role || 'Sin rol' %></div>
+              </div>
+              <div class="signer__status"><span class="pill pill--<%= r.effective_status %>"><%= STATUS_LABEL[r.effective_status] || r.effective_status %></span></div>
+            </div>
+
+            <div class="signer__meta">
+              <% const dniDisplay = (r.signature && r.signature.dni) || r.signer.dni; %>
+              <span><strong>DNI:</strong> <%= dniDisplay || 'Se exigirá al firmar' %></span>
+              <% if (r.signer.phone) { %><span><%= r.signer.phone %></span><% } %>
+              <% if (r.signer.email) { %><span><%= r.signer.email %></span><% } %>
+              <span>Vence <%= r.expiresLabel %></span>
+              <% if (r.sent_at) { %><span>Enviado <%= formatDateTime(r.sent_at) %></span><% } %>
+              <% if (r.signature) { %><span>Firmado <%= formatDateTime(r.signature.signed_at) %></span><% } %>
+            </div>
+
+            <% if (r.effective_status === 'signed') { %>
+              <div style="margin:10px 0;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;display:flex;align-items:center;gap:12px">
+                <img src="/admin/candidatos/<%= candidate.id %>/firma/<%= r.signature.id %>.png" alt="Firma de <%= r.signer.name %>" style="max-height:48px;max-width:160px;object-fit:contain;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px">
+                <div style="font-size:12px;color:var(--muted)">
+                  <strong style="color:var(--ink);display:block">✓ Firma registrada</strong>
+                  <span><%= formatDateTime(r.signature.signed_at) %><% if (dniDisplay) { %> · DNI <%= dniDisplay %><% } %></span>
+                  <span class="mono" style="display:block;font-size:10.5px;margin-top:2px">SHA-256: <%= shortHash(r.signature.signature_hash || r.signature.document_hash) %></span>
+                </div>
+              </div>
+              <div class="share">
+                <input class="input" readonly value="<%= r.url %>" aria-label="Link de firma">
+                <button class="btn btn--ghost btn--sm" type="button" data-copy="<%= r.url %>">Copiar</button>
+              </div>
+            <% } else if (isRejected) { %>
+              <div class="share">
+                <input class="input" readonly value="<%= r.url %>" aria-label="Link de firma">
+                <button class="btn btn--ghost btn--sm" type="button" data-copy="<%= r.url %>">Copiar</button>
+              </div>
+              <p class="hint" style="margin-top:8px">Proceso cerrado por el rechazo del candidato. Este link ya no permite firmar.</p>
+            <% } else if (r.effective_status === 'expired' || r.effective_status === 'revoked') { %>
+              <div class="share">
+                <input class="input" readonly value="<%= r.url %>" aria-label="Link de firma">
+                <button class="btn btn--ghost btn--sm" type="button" data-copy="<%= r.url %>">Copiar</button>
+              </div>
+              <div class="signer__actions">
+                <form method="post" action="/admin/requests/<%= r.id %>/reenviar">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn--soft btn--sm" type="submit">Reactivar link</button>
+                </form>
+              </div>
+            <% } else { %>
+              <div class="share">
+                <input class="input" readonly value="<%= r.url %>" aria-label="Link de firma">
+                <button class="btn btn--ghost btn--sm" type="button" data-copy="<%= r.url %>">Copiar</button>
+              </div>
+              <div class="signer__actions">
+                <a class="btn btn--wa btn--sm" target="_blank" rel="noopener"
+                   data-mark-sent="/admin/api/requests/<%= r.id %>/sent"
+                   href="<%= waLink(r.signer.phone, shareMessage(candidate, r)) %>">
+                  Enviar por WhatsApp
+                </a>
+                <form method="post" action="/admin/requests/<%= r.id %>/reenviar">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn--ghost btn--sm" type="submit">Renovar vencimiento</button>
+                </form>
+                <form method="post" action="/admin/requests/<%= r.id %>/revocar" data-confirm="¿Anular este link? El director ya no va a poder firmar con él.">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn--danger btn--sm" type="submit">Anular</button>
+                </form>
+              </div>
+            <% } %>
+          </article>
+        <% }) %>
+
+        <% if (!isRejected) { %>
+        <details class="add-signer" <%= requests.length === 0 ? 'open' : '' %>>
+          <summary>Agregar firmante</summary>
+          <form class="add-signer__form" method="post" action="/admin/candidatos/<%= candidate.id %>/firmantes">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-grid">
+              <div class="field">
+                <label for="signer-name">Nombre y apellido *</label>
+                <input class="input" id="signer-name" name="name" required maxlength="140" placeholder="Ej.: Martín Sosa">
+              </div>
+              <div class="field">
+                <label for="signer-dni-input">DNI del firmante (8 dígitos)</label>
+                <input class="input" id="signer-dni-input" name="dni" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="Ej.: 24785439 (8 dígitos)">
+              </div>
+              <div class="field">
+                <label for="signer-role">Ámbito y rol en la carátula *</label>
+                <select class="input" id="signer-role" name="gsb_role" required onchange="toggleCustomRole(this.value)">
+                  <% GSB_ROLE_OPTIONS.forEach(function (option) { %>
+                    <option value="<%= option.value %>"><%= option.label %></option>
+                  <% }) %>
+                  <option value="custom">Otro rol personalizado / adicional...</option>
+                </select>
+              </div>
+              <div class="field" id="custom-role-field" style="display:none">
+                <label for="signer-custom-role">Título o cargo personalizado *</label>
+                <input class="input" id="signer-custom-role" name="custom_role" placeholder="Ej.: Presidente / Gerente General">
+              </div>
+              <div class="field" id="custom-scope-field" style="display:none">
+                <label for="signer-custom-scope">Ámbito</label>
+                <select class="input" id="signer-custom-scope" name="custom_scope">
+                  <option value="central">Casa Central</option>
+                  <option value="sucursal">Sucursal</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="signer-phone">WhatsApp</label>
+                <input class="input" id="signer-phone" name="phone" maxlength="40" inputmode="tel" placeholder="+54 9 11 5555 5555">
+              </div>
+              <div class="field">
+                <label for="signer-email">Email</label>
+                <input class="input" id="signer-email" name="email" type="email" maxlength="160" placeholder="director@empresa.com">
+              </div>
+            </div>
+            <div class="summary-editor__bar" style="margin-top:14px">
+              <span class="hint">Podés agregar varios firmantes. No hace falta que firmen todos: a medida que van firmando, el expediente y el PDF se actualizan en tiempo real.</span>
+              <% if (gsbCompleteness.complete) { %>
+                <button class="btn btn--sm" type="submit" style="margin-left:auto">Agregar y generar link</button>
+              <% } else { %>
+                <a class="btn btn--soft btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula" style="margin-left:auto">Completar carátula para enviar</a>
+              <% } %>
+            </div>
+          </form>
+          <script>
+            function toggleCustomRole(val) {
+              var isCustom = (val === 'custom');
+              var rf = document.getElementById('custom-role-field');
+              var sf = document.getElementById('custom-scope-field');
+              if (rf) rf.style.display = isCustom ? 'block' : 'none';
+              if (sf) sf.style.display = isCustom ? 'block' : 'none';
+            }
+          </script>
+        </details>
+        <% } else { %>
+          <p class="hint" style="margin-top:14px">No se pueden agregar firmantes: el candidato fue rechazado por el Directorio y el proceso quedó cerrado.</p>
+        <% } %>
+      </section>
+    </div>
+
+    <aside class="detail__aside">
+      <!-- Datos -->
+      <section class="card">
+        <div class="card__head">
+          <h2>Datos GSB</h2>
+        </div>
+        <div class="card__body">
+          <dl class="kv">
+            <div class="kv__row"><dt class="kv__label">Función</dt><dd class="kv__value"><%= gsb.job_function || '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Sector</dt><dd class="kv__value"><%= gsb.sector || '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Área</dt><dd class="kv__value"><%= gsb.area || '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Sucursal</dt><dd class="kv__value"><%= gsb.branch || '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Tipo de puesto</dt><dd class="kv__value"><%= gsb.position_type_label || '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Fuentes</dt><dd class="kv__value"><%= gsb.sources.length ? gsb.sources.join(', ') : '—' %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Sueldo bruto</dt><dd class="kv__value"><%= gsb.gross_salary ? formatMoney(gsb.gross_salary) : '—' %></dd></div>
+          </dl>
+
+          <p class="hint" style="margin-top:12px">El CV completa lo que puede; el resto se carga desde la carátula GSB.</p>
+          <% if (!isRejected) { %>
+            <a class="btn btn--soft btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula">Editar carátula GSB</a>
+          <% } else { %>
+            <p class="hint">Carátula cerrada: el rechazo queda como constancia del proceso.</p>
+          <% } %>
+
+          <% if (!isRejected && !requests.some(function (r) { return r.signature; })) { %>
+            <form method="post" action="/admin/candidatos/<%= candidate.id %>/reanalizar-cv" style="margin-top:14px"
+                  data-confirm="Se van a reemplazar los datos y el resumen con lo que diga el CV. ¿Seguir?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn--ghost btn--sm" type="submit">Volver a analizar el CV</button>
+            </form>
+          <% } else if (isRejected) { %>
+            <p class="hint" style="margin-top:12px">El proceso quedó cerrado por rechazo: no se vuelve a analizar el CV.</p>
+          <% } else { %>
+            <p class="hint" style="margin-top:12px">Ya hay firmas registradas. Para cambiar el contenido hay que crear un nuevo candidato.</p>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- Documentos -->
+      <section class="card">
+        <div class="card__head">
+          <h2>Documentos</h2>
+        </div>
+        <div class="card__body docs">
+          <% if (candidate.cv_file_path) { %>
+            <div class="doc">
+              <span class="doc__icon">CV</span>
+              <div>
+                <div>CV del candidato</div>
+                <div class="doc__meta"><%= candidate.cv_original_name || 'PDF adjunto' %></div>
+              </div>
+              <a href="/admin/candidatos/<%= candidate.id %>/cv" target="_blank" rel="noopener">Abrir</a>
+            </div>
+          <% } else { %>
+            <p class="note">Sin CV adjunto.</p>
+          <% } %>
+          <div class="doc">
+            <span class="doc__icon">PDF</span>
+            <div>
+              <div>Carátula actual</div>
+              <div class="doc__meta">Incluye todas las firmas registradas</div>
+            </div>
+            <a href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver</a>
+          </div>
+          <% if (requests.some(function (r) { return r.signature; })) { %>
+            <div class="doc">
+              <span class="doc__icon" style="background:var(--ok-soft);color:var(--ok)">OK</span>
+              <div>
+                <div>PDF firmado</div>
+                <div class="doc__meta">Descarga con sello de firmas</div>
+              </div>
+              <a href="/admin/candidatos/<%= candidate.id %>/firmado.pdf">Descargar</a>
+            </div>
+          <% } %>
+          <% documents.slice(0, 3).forEach(function (d) { %>
+            <div class="doc">
+              <span class="doc__icon">H</span>
+              <div>
+                <div class="mono" style="font-size:11.5px"><%= shortHash(d.sha256) %></div>
+                <div class="doc__meta"><%= d.type === 'cover_signed' ? 'Carátula firmada' : 'Carátula' %> · <%= formatDateTime(d.created_at) %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <!-- Auditoría -->
+      <section class="card">
+        <div class="card__head">
+          <h2>Auditoría</h2>
+          <div class="card__actions"><a class="tiny" href="/admin/auditoria">Ver todo</a></div>
+        </div>
+        <div class="card__body">
+          <ul class="audit">
+            <% audit.slice(0, 12).forEach(function (a) { %>
+              <li>
+                <span class="audit__mark <%= /firm|login|pdf/.test(a.event) ? 'audit__mark--key' : '' %>"></span>
+                <div>
+                  <div class="audit__event"><%= a.event.replaceAll('_', ' ') %></div>
+                  <% if (a.detail) { %><div class="audit__detail"><%= a.detail %></div><% } %>
+                  <div class="audit__when"><%= formatDateTime(a.created_at) %><% if (a.ip) { %> · <%= a.ip %><% } %></div>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      </section>
+      <!-- Retención -->
+      <section class="card">
+        <div class="card__head">
+          <h2>Retención de datos</h2>
+        </div>
+        <div class="card__body">
+          <% if (requests.some(function (r) { return r.signature; })) { %>
+            <p class="hint">Este expediente tiene firmas registradas y no se elimina: la firma es evidencia del proceso. Si no se va a usar más, archivá el PDF firmado y anotá la decisión con Yohita.</p>
+          <% } else { %>
+            <p class="hint">Borra el CV, los links y los PDFs de este candidato. No se puede deshacer y queda registrado en la auditoría.</p>
+            <details style="margin-top:10px">
+              <summary class="btn--link">Eliminar expediente</summary>
+              <form method="post" action="/admin/candidatos/<%= candidate.id %>/eliminar" class="stack" style="margin-top:12px"
+                    data-confirm="Se va a eliminar el expediente y todos sus archivos. ¿Seguir?">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="field">
+                  <label for="del-confirm">Escribí <strong><%= candidate.full_name %></strong> para confirmar</label>
+                  <input class="input" id="del-confirm" name="confirm" required autocomplete="off" maxlength="160">
+                </div>
+                <button class="btn btn--danger btn--sm" type="submit">Eliminar definitivamente</button>
+              </form>
+            </details>
+          <% } %>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<%- include('../partials/foot', { jsFile: 'admin.js' }) %>

@@ -1,0 +1,142 @@
+<%- include('../partials/head', { title: 'Seguridad', cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'seguridad' }) %>
+
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1>Centro de seguridad</h1>
+      <p>Qué está protegido hoy, qué conviene reforzar y cómo verificar que nada se alteró.</p>
+    </div>
+  </div>
+
+  <% if (ok === 'integro') { %>
+    <div class="flash" style="margin-bottom:18px">Verificación completada: la cadena de auditoría está íntegra.</div>
+  <% } else if (ok === 'revisar') { %>
+    <div class="flash flash--warn" style="margin-bottom:18px">La verificación encontró un problema en la cadena de auditoría. Revisá el detalle más abajo.</div>
+  <% } else if (ok === 'sesiones') { %>
+    <div class="flash" style="margin-bottom:18px">Cerramos las demás sesiones abiertas. Solo queda activa esta.</div>
+  <% } %>
+
+  <section class="security-hero">
+    <div class="security-hero__text">
+      <span class="eyebrow">Protección del expediente</span>
+      <h2><%= checks.filter(function (c) { return c.ok; }).length %> de <%= checks.length %> controles activos</h2>
+      <p>
+        Ningún sistema es 100% invulnerable. Lo que sí podemos hacer es reducir la superficie de ataque,
+        cifrar el tránsito, exigir doble factor y dejar evidencia criptográfica de cada cambio.
+        Así, además de ser difícil de vulnerar, cualquier manipulación se detecta.
+      </p>
+    </div>
+    <div class="security-hero__seal">
+      <span class="security-hero__seal-icon" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 9.5 4.1-1.1 7-5.1 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <strong><%= envName === 'production' ? 'Producción' : 'Desarrollo' %></strong>
+        <span><%= baseUrl.replace(/^https?:\/\//, '') %></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="security-grid">
+    <% checks.forEach(function (c) { %>
+      <article class="security-check <%= c.ok ? 'is-ok' : 'is-warn' %>">
+        <span class="security-check__mark" aria-hidden="true"><%= c.ok ? '✓' : '!' %></span>
+        <div>
+          <h3><%= c.label %></h3>
+          <p><%= c.detail %></p>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+
+  <div class="detail" style="margin-top:22px">
+    <div class="stack">
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Verificación y respuesta</h2>
+            <p>Herramientas para comprobar la integridad y cortar accesos.</p>
+          </div>
+        </div>
+        <div class="card__body stack">
+          <div class="security-action">
+            <div>
+              <strong>Verificar la cadena de auditoría</strong>
+              <p class="hint">Recalcula el hash de cada evento y confirma que ninguno fue editado ni borrado.</p>
+            </div>
+            <form method="post" action="/admin/seguridad/verificar">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn--soft btn--sm" type="submit">Verificar ahora</button>
+            </form>
+          </div>
+          <div class="security-action">
+            <div>
+              <strong>Cerrar las demás sesiones</strong>
+              <p class="hint">Si entraste desde otra computadora o celular, invalida esas sesiones y deja solo esta.</p>
+            </div>
+            <form method="post" action="/admin/seguridad/revocar-sesiones" data-confirm="¿Cerrar todas las demás sesiones del panel?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn--ghost btn--sm" type="submit">Cerrar otras sesiones</button>
+            </form>
+          </div>
+          <div class="security-action">
+            <div>
+              <strong>Respaldos</strong>
+              <p class="hint">Copiá la base, los CVs y los PDFs firmados con un manifiesto de hashes. Programalo todos los días.</p>
+            </div>
+            <code class="security-command">npm run backup</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Qué falta para producción</h2>
+            <p>Avisos de configuración detectados al arrancar.</p>
+          </div>
+        </div>
+        <div class="card__body">
+          <% if (warnings.length === 0) { %>
+            <p class="muted">No hay avisos pendientes. La configuración crítica está completa.</p>
+          <% } else { %>
+            <ul class="security-list">
+              <% warnings.forEach(function (w) { %><li><%= w %></li><% }) %>
+            </ul>
+          <% } %>
+          <p class="hint" style="margin-top:12px">
+            En producción la app no arranca si falta HTTPS, si la clave es la de demo o si el secreto de sesión es débil.
+            Ver <span class="mono">docs/SEGURIDAD.md</span> para el checklist completo.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="detail__aside">
+      <section class="card">
+        <div class="card__head"><h2>Estado de la sesión</h2></div>
+        <div class="card__body">
+          <dl class="kv">
+            <div class="kv__row"><dt class="kv__label">Sesiones activas</dt><dd class="kv__value"><%= activeSessions %></dd></div>
+            <div class="kv__row"><dt class="kv__label">Vence</dt><dd class="kv__value"><%= sessionTtlHours %> h</dd></div>
+            <div class="kv__row"><dt class="kv__label">Inactividad</dt><dd class="kv__value"><%= sessionIdleMinutes %> min</dd></div>
+            <div class="kv__row"><dt class="kv__label">Links de firma</dt><dd class="kv__value"><%= tokenTtlHours %> h</dd></div>
+            <div class="kv__row"><dt class="kv__label">Último ingreso</dt><dd class="kv__value"><%= lastLogin ? formatDateTime(lastLogin.created_at) : '—' %></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>Documentación</h2></div>
+        <div class="card__body stack">
+          <a class="btn btn--ghost btn--sm" href="/seguridad" target="_blank" rel="noopener">Página pública de seguridad</a>
+          <a class="btn btn--ghost btn--sm" href="/admin/auditoria">Ver auditoría completa</a>
+          <p class="hint">La página pública explica a directores y candidatos qué datos se guardan y cómo se protegen, sin revelar detalles internos.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<%- include('../partials/foot', { jsFile: 'admin.js' }) %>

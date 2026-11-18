@@ -1,0 +1,7 @@
+<%- include('partials/head', { title: title, cssFile: 'admin.css' }) %>
+<main class="container">
+  <div class="page-head"><h1><%= title %></h1></div>
+  <p class="muted"><%= message %></p>
+  <p style="margin-top:18px"><a class="btn btn--ghost" href="/admin">Volver al panel</a></p>
+</main>
+<%- include('partials/foot', { jsFile: 'admin.js' }) %>

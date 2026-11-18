@@ -1,0 +1,10 @@
+<%- include('../partials/head', { title: title, cssFile: 'sign.css', bodyClass: 'sign-body' }) %>
+<main class="invalid">
+  <div class="invalid__box">
+    <div class="invalid__icon">!</div>
+    <h1><%= title %></h1>
+    <p><%= message %></p>
+    <p class="invalid__code"><%= company %> · <%= code %></p>
+  </div>
+</main>
+<%- include('../partials/foot', { jsFile: 'sign.js' }) %>

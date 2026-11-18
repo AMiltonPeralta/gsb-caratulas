@@ -1,0 +1,421 @@
+<%- include('../partials/head', { title: pageTitle, cssFile: 'sign.css', bodyClass: 'sign-body' }) %>
+
+<header class="sign-top">
+  <div class="sign-top__inner">
+    <div class="sign-brand">
+      <span class="sign-brand__mark"><%= (company || 'S').slice(0, 1).toUpperCase() %></span>
+      <span><%= company %></span>
+    </div>
+    <span class="sign-top__tag">Carátula de Ingreso · GSB</span>
+  </div>
+</header>
+
+<main class="sign-main">
+  <section class="candidate-head">
+    <p class="eyebrow">Carátula de Ingreso · Grúas San Blas</p>
+    <h1><%= candidate.full_name %></h1>
+    <p class="candidate-head__role">
+      <%= gsb.job_function || candidate.position %><% if (gsb.sector) { %> · <%= gsb.sector %><% } %><% if (gsb.branch) { %> · <%= gsb.branch %><% } %>
+    </p>
+    <div class="candidate-head__meta">
+      <% if (rejected) { %>
+        <span class="pill pill--revoked">Candidato rechazado</span>
+      <% } else if (signed) { %>
+        <span class="pill pill--signed">Firmado</span>
+      <% } else { %>
+        <span class="pill pill--sent">Pendiente de tu firma</span>
+      <% } %>
+      <% if (!rejected) { %><span>Link válido hasta el <%= expiresLabel %></span><% } %>
+      <span>Para <%= request.signer.name %></span>
+    </div>
+  </section>
+
+  <div class="trust-strip">
+    <span class="trust-strip__icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 9.5 4.1-1.1 7-5.1 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <p>
+      <strong><%= secure ? 'Conexión cifrada' : 'Entorno local de prueba' %></strong> ·
+      firma con sello SHA-256 · auditoría encadenada.
+      <a href="/seguridad" target="_blank" rel="noopener">Cómo protegemos tus datos</a>
+    </p>
+  </div>
+
+  <% if (rejected) { %>
+    <div class="hero-banner hero-banner--danger">
+      <span class="hero-banner__icon" aria-hidden="true">×</span>
+      <div>
+        <strong>Candidato rechazado</strong>
+        <%= rejected.by %> cerró el proceso el <%= rejected.atLabel %>.
+        <% if (rejected.reason) { %>
+          <div class="reject-reason"><b>Motivo:</b> <%= rejected.reason %></div>
+        <% } %>
+        Los links pendientes quedaron anulados y la decisión se registró en la auditoría.
+        <div class="hero-banner__actions">
+          <a class="btn btn--ghost btn--sm" href="/f/<%= token %>/caratula.pdf?download=1">Descargar carátula</a>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (signed) { %>
+    <div class="hero-banner">
+      <span class="hero-banner__icon" aria-hidden="true">✓</span>
+      <div>
+        <strong>Ya firmaste esta carátula</strong>
+        El <%= signedAt %> quedó registrada tu firma. Podés descargar una copia o volver a revisar el expediente.
+        <div class="hero-banner__actions">
+          <a class="btn btn--sm" href="/f/<%= token %>/firmado.pdf">Descargar PDF firmado</a>
+          <a class="btn btn--ghost btn--sm" href="/f/<%= token %>/caratula.pdf?download=1">Descargar carátula</a>
+        </div>
+        <% if (signatureHash) { %>
+          <div class="tiny mono" style="margin-top:8px;color:#3f6b55;word-break:break-all">Código de firma SHA-256 · <%= signatureHash %></div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (requests && requests.length > 0) { %>
+    <% const signedList = requests.filter(function (r) { return r.signature; }); %>
+    <section class="circuit-banner" style="margin:16px 0 20px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#C8102E;color:#fff;font-size:12px;font-weight:700">✓</span>
+          <strong style="font-size:13.5px;color:var(--ink);letter-spacing:0.3px;text-transform:uppercase">Circuito de Aprobaciones GSB</strong>
+        </div>
+        <span class="pill <%= signedList.length > 0 ? 'pill--signed' : 'pill--plain' %>" style="font-weight:600;font-size:11.5px">
+          <%= signedList.length %> de <%= requests.length %> firmas registradas
+        </span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px">
+        <% requests.forEach(function (r) { %>
+          <% const isMe = (r.id === highlightRequestId); %>
+          <% const isSigned = Boolean(r.signature); %>
+          <div style="padding:10px 12px;border-radius:8px;border:1.5px solid <%= isSigned ? '#86efac' : (isMe ? '#C8102E' : '#e2e8f0') %>;background:<%= isSigned ? '#f0fdf4' : (isMe ? '#fff8f8' : '#fafafa') %>">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:10.5px;font-weight:700;color:<%= isSigned ? '#166534' : (isMe ? '#C8102E' : '#64748b') %>;text-transform:uppercase">
+                <%= r.signer.role %>
+              </span>
+              <% if (isSigned) { %>
+                <span class="pill pill--signed" style="font-size:10px;padding:2px 6px">✓ Ya firmó</span>
+              <% } else if (isMe) { %>
+                <span class="pill pill--sent" style="font-size:10px;padding:2px 6px;background:#C8102E;color:#fff">Tu turno</span>
+              <% } else { %>
+                <span class="pill pill--plain" style="font-size:10px;padding:2px 6px">Pendiente</span>
+              <% } %>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">
+              <%= r.signer.name %> <% if (isMe) { %><span style="font-size:11px;color:#C8102E;font-weight:normal">(Tú)</span><% } %>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">
+              <% if (isSigned) { %>
+                <% const d = r.signature.dni || r.signer.dni; %>
+                Firmó el <%= formatDateTime(r.signature.signed_at) %><% if (d) { %> · DNI <%= d %><% } %>
+              <% } else if (isMe) { %>
+                Esperando tu firma abajo
+              <% } else { %>
+                Aún no firmó
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  <% } %>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones del expediente">
+    <button class="tabs__btn" type="button" role="tab" id="tab-caratula" aria-controls="panel-caratula" aria-selected="true" data-tab="caratula">Carátula</button>
+    <button class="tabs__btn" type="button" role="tab" id="tab-cv" aria-controls="panel-cv" aria-selected="false" data-tab="cv">CV</button>
+    <button class="tabs__btn" type="button" role="tab" id="tab-informe" aria-controls="panel-informe" aria-selected="false" data-tab="informe">Informe de Entrevista</button>
+    <button class="tabs__btn" type="button" role="tab" id="tab-resumen" aria-controls="panel-resumen" aria-selected="false" data-tab="resumen">Resumen</button>
+  </nav>
+
+  <section class="panel" id="panel-resumen" role="tabpanel" aria-labelledby="tab-resumen" hidden>
+    <div class="facts">
+      <div class="fact">
+        <div class="fact__label">Función</div>
+        <div class="fact__value"><%= gsb.job_function || candidate.position %></div>
+      </div>
+      <% [['Sucursal / localidad', gsb.branch], ['Sector', gsb.sector], ['Área', gsb.area], ['Tipo de puesto', gsb.position_type_label]].forEach(function (pair) { %>
+        <% if (pair[1]) { %>
+          <div class="fact">
+            <div class="fact__label"><%= pair[0] %></div>
+            <div class="fact__value"><%= pair[1] %></div>
+          </div>
+        <% } %>
+      <% }) %>
+    </div>
+
+    <div class="summary-card">
+      <% if (candidate.summary_text) { %>
+        <%- summaryHtml(candidate.summary_text) %>
+      <% } else { %>
+        <p class="muted">El resumen del candidato todavía no está cargado. Podés revisar el CV en la pestaña siguiente.</p>
+      <% } %>
+    </div>
+    <p class="sign-hint">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4M8 5.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      El resumen y el CV son de consulta. La firma se coloca en la pestaña Carátula.
+    </p>
+  </section>
+
+  <section class="panel" id="panel-informe" role="tabpanel" aria-labelledby="tab-informe" hidden>
+    <% if (interviewData && interviewData.fields) { %>
+      <% const f = interviewData.fields; const comps = interviewData.comps || {}; %>
+      <div class="summary-card" style="padding:18px">
+        <div style="border-bottom:2px solid #C8102E;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2 style="font-size:16px;color:#C8102E;margin:0 0 4px">INFORME DE ENTREVISTA · MODELO DE TALENTO GSB</h2>
+            <div class="muted tiny">Evaluación por competencias · Selección &amp; Desarrollo</div>
+          </div>
+          <div style="text-align:right" class="tiny">
+            <b><%= f.company || 'Grúas San Blas' %></b><br>
+            <%= f.date || '' %> <%= f.time || '' %>
+          </div>
+        </div>
+
+        <div class="facts" style="margin-bottom:14px">
+          <div class="fact"><div class="fact__label">Candidato</div><div class="fact__value"><%= f.name || candidate.full_name %></div></div>
+          <div class="fact"><div class="fact__label">Vacante / Función</div><div class="fact__value"><%= f.function || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Sucursal</div><div class="fact__value"><%= f.branch || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Sector / Área</div><div class="fact__value"><%= f.sector || '—' %> · <%= f.area || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Entrevistador/es</div><div class="fact__value"><%= f.interviewer || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Reclutamiento</div><div class="fact__value"><%= f.source || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Educación</div><div class="fact__value"><%= f.education || '—' %> <%= f.educationDetail ? `(${f.educationDetail})` : '' %></div></div>
+          <div class="fact"><div class="fact__label">Transporte / Traslado</div><div class="fact__value"><%= f.transport || '—' %> · <%= f.commute || '—' %></div></div>
+          <div class="fact"><div class="fact__label">Pretensión / Disp.</div><div class="fact__value"><%= f.salary || '—' %> · <%= f.availability || '—' %></div></div>
+        </div>
+
+        <div style="margin-bottom:14px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px">
+          <h3 style="font-size:12px;color:#C8102E;text-transform:uppercase;margin:0 0 8px">Ajuste técnico y resultados</h3>
+          <p style="margin:4px 0;font-size:12px"><b>Requisitos excluyentes:</b> <%= f.requirements || '—' %></p>
+          <p style="margin:4px 0;font-size:12px"><b>Conocimientos técnicos:</b> <%= f.technical || '—' %></p>
+          <p style="margin:4px 0;font-size:12px"><b>Fit Cultural:</b> <%= f.fitNA === 'true' ? 'N/A' : (f.fitResult || 'Pendiente') %> &nbsp;·&nbsp; <b>Prueba técnica:</b> <%= f.testNA === 'true' ? 'N/A' : (f.testResult ? `${f.testResult}/100` : 'Pendiente') %></p>
+          <% if (f.results) { %><p style="margin:4px 0;font-size:12px"><b>Resultados / Aporte:</b> <%= f.results %></p><% } %>
+          <% if (f.clarifications) { %><p style="margin:4px 0;font-size:12px"><b>Aclaraciones:</b> <%= f.clarifications %></p><% } %>
+        </div>
+
+        <% if (Object.keys(comps).length) { %>
+          <div style="margin-bottom:14px">
+            <h3 style="font-size:12px;color:#C8102E;text-transform:uppercase;margin:0 0 8px">Competencias evaluadas</h3>
+            <div style="display:grid;gap:8px">
+              <% Object.entries(comps).forEach(([k, c]) => { %>
+                <% if (c.answer && c.answer.trim()) { %>
+                  <div style="border-left:3px solid #C8102E;background:#f9fafb;padding:8px 12px;border-radius:0 6px 6px 0">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700">
+                      <span><%= k %></span>
+                      <span class="pill pill--plain"><%= c.grade || 'PV' %></span>
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text);margin-top:4px"><%= c.answer %></div>
+                  </div>
+                <% } %>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <% if (f.strengths) { %>
+            <div style="background:#f4fbf7;border:1px solid #d2f0df;border-radius:6px;padding:10px">
+              <b style="color:#1d6f42;font-size:11.5px">Fortalezas:</b>
+              <div style="font-size:11.5px;margin-top:4px"><%= f.strengths %></div>
+            </div>
+          <% } %>
+          <% if (f.risks) { %>
+            <div style="background:#fffaf0;border:1px solid #fae1b3;border-radius:6px;padding:10px">
+              <b style="color:#925f0a;font-size:11.5px">Oportunidades de mejora:</b>
+              <div style="font-size:11.5px;margin-top:4px"><%= f.risks %></div>
+            </div>
+          <% } %>
+          <% if (f.digital) { %>
+            <div style="background:#f8f9fa;border:1px solid var(--line);border-radius:6px;padding:10px">
+              <b style="font-size:11.5px">Mentalidad digital / IA:</b>
+              <div style="font-size:11.5px;margin-top:4px"><%= f.digital %></div>
+            </div>
+          <% } %>
+          <% if (f.autonomy) { %>
+            <div style="background:#f8f9fa;border:1px solid var(--line);border-radius:6px;padding:10px">
+              <b style="font-size:11.5px">Autonomía y productividad:</b>
+              <div style="font-size:11.5px;margin-top:4px"><%= f.autonomy %></div>
+            </div>
+          <% } %>
+        </div>
+
+        <div style="background:#f9f9fb;border:1px solid var(--line);border-radius:8px;padding:12px">
+          <div style="font-size:12px"><b>Decisión:</b> <span class="pill pill--signed"><%= f.decision || 'Pendiente' %></span></div>
+          <% if (f.conclusion) { %>
+            <div style="font-size:12px;margin-top:6px"><b>Conclusión:</b> <%= f.conclusion %></div>
+          <% } %>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="summary-card" style="padding:22px;text-align:center">
+        <p class="muted">El informe de entrevista todavía no fue completado por Selección &amp; Desarrollo.</p>
+      </div>
+    <% } %>
+  </section>
+
+  <section class="panel" id="panel-cv" role="tabpanel" aria-labelledby="tab-cv" hidden>
+    <% if (candidate.cv_file_path) { %>
+      <div class="cv-toolbar">
+        <span class="cv-toolbar__name"><%= candidate.cv_original_name || 'CV del candidato' %></span>
+        <div class="cv-toolbar__actions">
+          <a class="btn btn--ghost btn--sm" href="/f/<%= token %>/cv" target="_blank" rel="noopener">Abrir</a>
+          <a class="btn btn--soft btn--sm" href="/f/<%= token %>/cv" download>Descargar</a>
+        </div>
+      </div>
+      <iframe class="cv-frame" src="/f/<%= token %>/cv#view=FitH" title="CV de <%= candidate.full_name %>"></iframe>
+      <p class="sign-hint">Si el CV no se ve en el visor, tocá “Abrir” para verlo en pantalla completa.</p>
+    <% } else { %>
+      <div class="cv-empty">El CV no está adjunto en este expediente.</div>
+    <% } %>
+  </section>
+
+  <section class="panel" id="panel-caratula" role="tabpanel" aria-labelledby="tab-caratula">
+    <div class="cover-wrap">
+      <%- include('../partials/cover') %>
+    </div>
+    <% if (!signed && !rejected) { %>
+      <p class="sign-hint">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 12.5c2-.6 2.2-5 4-5.6 1-.3 1.5.9 1 1.5-.8.8-2.5.6-2.5 2 0 1 1 1.5 2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Al firmar, tu firma se estampa en tu bloque de la carátula junto con la fecha, la hora y el código de verificación.
+      </p>
+    <% } %>
+    <% if (canReject) { %>
+      <div class="reject-zone">
+        <div>
+          <strong>Rechazar candidato</strong>
+          <p>Podés rechazar al candidato y cerrar el proceso. Se anulan los links pendientes y la decisión queda registrada en la auditoría con tu nombre, la fecha y el motivo.</p>
+        </div>
+        <button class="btn btn--danger btn--sm" type="button" id="open-reject">Rechazar candidato</button>
+      </div>
+    <% } %>
+  </section>
+
+  <footer class="site-foot container" style="padding-bottom:8px">
+    <span class="muted"><%= company %> · Documento confidencial con datos personales (Ley 25.326)</span>
+  </footer>
+</main>
+
+<% if (!signed && !rejected) { %>
+  <div class="sign-bar">
+    <div class="sign-bar__inner">
+      <div class="sign-bar__text">
+        <strong>Todo listo para firmar</strong>
+        Revisá el resumen y el CV. La firma queda sellada con fecha, hora y código de verificación.
+      </div>
+      <button class="btn" type="button" id="open-sign">Firmar carátula</button>
+    </div>
+  </div>
+
+  <div class="modal" id="sign-modal" role="dialog" aria-modal="true" aria-labelledby="sign-title" hidden>
+    <div class="modal__backdrop" data-close-sign></div>
+    <div class="modal__sheet">
+      <div class="modal__handle" aria-hidden="true"></div>
+
+      <div id="sign-form-view">
+        <div class="modal__head">
+          <div>
+            <h2 id="sign-title">Firmar carátula</h2>
+            <p>Dibujá tu firma con el dedo (o el mouse). Quedará estampada en la carátula de <%= candidate.full_name %>.</p>
+          </div>
+          <button class="modal__close" type="button" data-close-sign aria-label="Cerrar">×</button>
+        </div>
+
+        <div class="sig-pad-wrap" id="sig-wrap">
+          <canvas id="sig-canvas" aria-label="Área para dibujar la firma"></canvas>
+          <div class="sig-pad-placeholder">Dibujá tu firma acá</div>
+        </div>
+
+        <div class="sig-pad-tools">
+          <button class="btn btn--ghost btn--sm" type="button" id="clear-sign">Limpiar</button>
+          <span class="hint">Firmá dentro del recuadro</span>
+        </div>
+
+        <div class="field" style="margin-top:14px;margin-bottom:14px;text-align:left">
+          <label for="signer-dni" style="display:block;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:5px">
+            DNI / Documento del firmante (8 dígitos) *
+          </label>
+          <input class="input" id="signer-dni" name="dni" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required
+                 value="<%= (request.signature && request.signature.dni) || (request.signer && request.signer.dni) || '' %>"
+                 placeholder="Ej: 24785439"
+                 style="font-size:15px;letter-spacing:1px;font-weight:600">
+          <span class="hint" style="font-size:11px;color:var(--muted);margin-top:4px;display:block">
+            Debe contener exactamente 8 dígitos numéricos (sin puntos ni espacios).
+          </span>
+        </div>
+
+        <label class="consent" for="consent">
+          <input type="checkbox" id="consent">
+          <span>Declaro que soy <strong><%= request.signer.name %></strong>, titular del DNI ingresado, y que esta firma electrónica expresa mi voluntad de aprobar la carátula de <%= candidate.full_name %>. Acepto que se registren mi DNI, fecha, hora, IP y dispositivo como constancia legal (Ley 25.506).</span>
+        </label>
+
+        <p class="modal__error" id="sign-error" role="alert"></p>
+
+        <div class="modal__actions">
+          <button class="btn btn--ghost" type="button" data-close-sign>Cancelar</button>
+          <button class="btn" type="button" id="confirm-sign">Confirmar y firmar</button>
+        </div>
+      </div>
+
+      <div class="success" id="sign-success" hidden>
+        <div class="success__icon" aria-hidden="true">✓</div>
+        <h2>Firma registrada</h2>
+        <p>Tu firma quedó estampada en la carátula. Estamos generando el PDF firmado…</p>
+        <div class="success__hash" id="success-hash"></div>
+        <a class="btn" href="/f/<%= token %>/firmado.pdf">Descargar PDF firmado</a>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<% if (canReject) { %>
+  <div class="modal" id="reject-modal" role="dialog" aria-modal="true" aria-labelledby="reject-title" hidden>
+    <div class="modal__backdrop" data-close-reject></div>
+    <div class="modal__sheet">
+      <div class="modal__handle" aria-hidden="true"></div>
+
+      <div id="reject-form-view">
+        <div class="modal__head">
+          <div>
+            <h2 id="reject-title">Rechazar candidato</h2>
+            <p>Vas a cerrar el proceso de <strong><%= candidate.full_name %></strong>. Se anulan los links pendientes y la decisión queda en la auditoría con tu nombre, la fecha y el motivo.</p>
+          </div>
+          <button class="modal__close" type="button" data-close-reject aria-label="Cerrar">×</button>
+        </div>
+
+        <div class="field">
+          <label for="reject-reason">Motivo del rechazo *</label>
+          <textarea class="textarea" id="reject-reason" rows="4" maxlength="500" placeholder="Ej.: No cumple con los requisitos del puesto."></textarea>
+        </div>
+
+        <p class="modal__error" id="reject-error" role="alert"></p>
+
+        <div class="modal__actions">
+          <button class="btn btn--ghost" type="button" data-close-reject>Cancelar</button>
+          <button class="btn btn--danger" type="button" id="confirm-reject">Confirmar rechazo</button>
+        </div>
+      </div>
+
+      <div class="success" id="reject-success" hidden>
+        <div class="success__icon" aria-hidden="true">✓</div>
+        <h2>Candidato rechazado</h2>
+        <p>La decisión quedó registrada. Los links pendientes fueron anulados y el PDF conserva el motivo del rechazo.</p>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<script nonce="<%= cspNonce %>">
+  window.__SIGN__ = {
+    token: <%- JSON.stringify(token) %>,
+    signerName: <%- JSON.stringify(request.signer.name).replace(/</g, '\\u003c') %>,
+    endpoint: <%- JSON.stringify(`/f/${token}/firmar`) %>,
+    rejectEndpoint: <%- JSON.stringify(`/f/${token}/rechazar`) %>,
+    signed: <%- JSON.stringify(Boolean(signed)) %>,
+    rejected: <%- JSON.stringify(Boolean(rejected)) %>
+  };
+</script>
+<script src="/vendor/signature_pad.umd.min.js" defer></script>
+<%- include('../partials/foot', { jsFile: 'sign.js', showFooter: false }) %>

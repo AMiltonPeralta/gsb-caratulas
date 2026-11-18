@@ -1,0 +1,36 @@
+{
+  "name": "firma-caratulas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MVP de Carátula de Ingreso GSB con extracción de datos del CV, resumen y firma electrónica",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node src/migrate.js",
+    "seed": "node scripts/seed-demo.js",
+    "example": "node scripts/generate-example.js",
+    "backup": "node scripts/backup.js",
+    "relocate": "node scripts/relocate-paths.js",
+    "security:hash": "node scripts/hash-password.js",
+    "security:totp": "node scripts/totp-setup.js",
+    "security:check": "node scripts/verify-integrity.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38"
+  },
+  "devDependencies": {
+    "dugite": "^3.3.3"
+  },
+  "allowScripts": {
+    "dugite@3.3.3": true
+  }
+}

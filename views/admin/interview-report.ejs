@@ -1,0 +1,510 @@
+<%- include('../partials/head', { title: `Informe de entrevista · ${candidate.full_name}`, cssFile: 'admin.css' }) %>
+<%- include('../partials/admin-nav', { adminName, active: 'panel' }) %>
+
+<style>
+:root{--r:#c8102e;--dark:#202124;--mut:#647084;--line:#dfe3e9;--bg:#f5f6f8;--green:#267047;--amber:#8b6300}
+.interview-container{max-width:1170px;margin:20px auto;padding:0 16px}
+.interview-header{background:white;border-bottom:4px solid var(--r);padding:16px 20px;border-radius:10px 10px 0 0;position:relative}
+.interview-brand{font-weight:900;letter-spacing:1px;color:var(--r);font-size:20px}
+.interview-header h1{font-size:22px;margin:3px 0 4px}
+.interview-header .sub{color:var(--mut);font-size:12px}
+.interview-actions{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+.interview-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:16px;align-items:start}
+.interview-panel{background:white;border:1px solid var(--line);border-radius:10px;padding:15px;margin:0 0 14px}
+.interview-panel h2{font-size:14px;color:var(--r);text-transform:uppercase;letter-spacing:.4px;margin:0 0 11px}
+.ig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.ig.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.interview-panel label{display:block;font-weight:700;font-size:11px;color:#505b6d;margin:0 0 4px}
+.interview-panel input,.interview-panel select,.interview-panel textarea{width:100%;border:1px solid #ccd2dc;border-radius:6px;padding:7px 9px;color:var(--dark);background:white;font-size:12px;box-sizing:border-box}
+.interview-panel textarea{resize:vertical;min-height:58px}
+.ifull{grid-column:1/-1}
+.inote{font-size:11px;color:var(--mut);margin:7px 0 0}
+.competence{border:1px solid var(--line);border-radius:8px;margin:10px 0;padding:10px}
+.ctop{display:flex;justify-content:space-between;gap:8px;align-items:start}
+.ctitle{font-weight:700;font-size:13px}
+.chip{font-size:10px;background:#f2f3f5;border-radius:4px;padding:3px 6px;white-space:nowrap}
+.questions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:9px 0}
+.qbtn{font-size:10px;text-align:left;padding:7px;min-height:48px;cursor:pointer;background:#fff;border:1px solid #cfd4dc;border-radius:6px;color:var(--dark)}
+.qbtn:hover{border-color:var(--r)}
+.qbtn.active{background:#fff1f3;border-color:var(--r);color:#970d28}
+.qtext{background:#f8f9fa;border-left:3px solid var(--r);padding:8px;margin:6px 0;font-size:11px}
+.irow{display:grid;grid-template-columns:110px 1fr;gap:8px}
+.iwarn{background:#fff8e8;border:1px solid #e7d6ae;border-radius:7px;padding:9px;font-size:11px}
+.preview-sticky{position:sticky;top:12px}
+.icheckline{display:flex;gap:8px;align-items:center;margin-top:8px}
+.icheckline input{width:16px}
+.icheckline label{margin:0}
+.ireport{width:100%;background:white;padding:14px;border:1px solid var(--line);font-size:10px;line-height:1.28}
+.ireport h1{font-size:15px;margin:0 0 3px}
+.ireport h2{color:var(--r);font-size:10px;border-bottom:1px solid #d3d7de;margin:8px 0 4px;padding-bottom:3px;text-transform:uppercase}
+.ireport .rh{display:flex;justify-content:space-between;border-bottom:2px solid var(--r);padding-bottom:8px;margin-bottom:8px}
+.ireport .brand-rep{font-size:16px;font-weight:900;color:var(--r)}
+.ireport .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ireport table{width:100%;border-collapse:collapse;table-layout:fixed}
+.ireport td,.ireport th{font-size:9px;border-bottom:1px solid #e3e6ec;padding:3px 2px;vertical-align:top;text-align:left;word-break:break-word}
+.ireport th{background:#f1f2f4;color:#333}
+.ireport p{margin:3px 0}
+.ireport .muted{color:#657080}
+.ireport .footer{font-size:8px;margin-top:7px;border-top:1px solid #cfd4dd;padding-top:5px}
+.ireport .summary{padding:6px;background:#f6f7f8;white-space:pre-wrap;overflow-wrap:anywhere}
+
+@media(max-width:850px){
+  .interview-layout{grid-template-columns:1fr}
+  .ig{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .preview-sticky{position:static}
+}
+@media print{
+  body * {visibility:hidden}
+  .ireport, .ireport * {visibility:visible}
+  .ireport {position:absolute;left:0;top:0;width:100%!important;border:0!important;padding:0!important;font-size:8.5px!important;line-height:1.2!important}
+}
+</style>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="/admin">Candidatos</a><span>/</span>
+    <a href="/admin/candidatos/<%= candidate.id %>"><%= candidate.full_name %></a><span>/</span>
+    <span>Informe de entrevista</span>
+  </div>
+
+  <% if (typeof ok !== 'undefined' && ok === 'guardado') { %>
+    <div class="flash" style="margin-top:14px">Informe de entrevista guardado correctamente.</div>
+  <% } %>
+
+  <div class="interview-container">
+    <div class="interview-header">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <a href="/admin/candidatos/<%= candidate.id %>" class="btn btn--ghost btn--sm" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-weight:600" title="Volver al candidato">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Volver
+        </a>
+        <div class="interview-brand">GSB <span style="font-size:11px;color:#222;font-weight:normal">GRÚAS SAN BLAS</span></div>
+      </div>
+      <h1>Informe de Entrevista - Modelo de Talento GSB</h1>
+      <div class="sub">Herramienta oficial de Selección & Desarrollo · Salida ejecutiva A4</div>
+    </div>
+
+    <div class="interview-actions">
+      <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>" style="display:inline-flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Volver al expediente
+      </a>
+      <button class="btn btn--primary btn--sm" type="button" onclick="saveInterviewReport()">Guardar cambios</button>
+      <button class="btn btn--soft btn--sm" type="button" onclick="window.print()">Imprimir / Guardar PDF (A4)</button>
+      <button class="btn btn--ghost btn--sm" type="button" onclick="copyReport()">Copiar resumen</button>
+      <span id="save-status" class="tiny" style="align-self:center;margin-left:auto;color:var(--muted)"></span>
+    </div>
+
+    <div class="interview-layout">
+      <!-- FORMULARIO EDITOR -->
+      <div class="interview-editor">
+        <section class="interview-panel">
+          <h2>01 · Datos de entrevista y vacante</h2>
+          <div class="ig">
+            <div><label>Nombre y apellido</label><input data-field="name" value="<%= interviewData.name || candidate.full_name %>" placeholder="Candidato/a"></div>
+            <div>
+              <label>Empresa</label>
+              <select data-field="company">
+                <option value="">Seleccionar</option>
+                <option <%= (interviewData.company || 'Grúas San Blas') === 'Grúas San Blas' ? 'selected' : '' %>>Grúas San Blas</option>
+                <option <%= interviewData.company === 'MaquinAr / Daemar' ? 'selected' : '' %>>MaquinAr / Daemar</option>
+                <option <%= interviewData.company === 'ArgenMieles' ? 'selected' : '' %>>ArgenMieles</option>
+                <option <%= interviewData.company === 'Otra' ? 'selected' : '' %>>Otra</option>
+              </select>
+            </div>
+            <div>
+              <label>Medio de reclutamiento</label>
+              <select data-field="source">
+                <option value="">Seleccionar</option>
+                <% GSB_SOURCES.forEach(function(s) { %>
+                  <option <%= (interviewData.source || (sources[0] || '')) === s ? 'selected' : '' %>><%= s %></option>
+                <% }) %>
+                <option <%= interviewData.source === 'LinkedIn' ? 'selected' : '' %>>LinkedIn</option>
+                <option <%= interviewData.source === 'Otro' ? 'selected' : '' %>>Otro</option>
+              </select>
+            </div>
+            <div>
+              <label>Sucursal (nómina vigente)</label>
+              <select data-field="branch" id="i-branch"></select>
+            </div>
+            <div>
+              <label>Función / posible vacante (nómina)</label>
+              <select data-field="function" id="i-function"></select>
+            </div>
+            <div>
+              <label>Sector (nómina)</label>
+              <select data-field="sector" id="i-sector"></select>
+            </div>
+            <div>
+              <label>Área (competencias GSB)</label>
+              <select data-field="area" id="i-area"></select>
+            </div>
+            <div><label>Fecha de entrevista</label><input type="date" data-field="date" value="<%= interviewData.date || '' %>"></div>
+            <div><label>Hora</label><input type="time" data-field="time" value="<%= interviewData.time || '' %>"></div>
+            <div class="ifull">
+              <label>Entrevistadores/as (podés ingresar varios nombres)</label>
+              <textarea data-field="interviewer" rows="2" placeholder="Nombres de los entrevistadores"><%= interviewData.interviewer || '' %></textarea>
+            </div>
+            <div>
+              <label>Nivel educativo</label>
+              <select data-field="education">
+                <option value="">Seleccionar</option>
+                <% ['Primario incompleto','Primario completo','Secundario incompleto','Secundario completo','Terciario en curso','Terciario completo','Universitario en curso','Universitario completo','Posgrado en curso','Posgrado completo','Otro / A validar'].forEach(function(ed) { %>
+                  <option <%= interviewData.education === ed ? 'selected' : '' %>><%= ed %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div><label>Formación / estudios (detalle)</label><input data-field="educationDetail" value="<%= interviewData.educationDetail || '' %>" placeholder="Carrera, institución, situación"></div>
+            <div>
+              <label>Medio de transporte</label>
+              <select data-field="transport">
+                <option value="">Seleccionar</option>
+                <% ['Auto Propio','Auto Familiar','Motocicleta','Bicicleta','Colectivo','Otros'].forEach(function(tr) { %>
+                  <option <%= interviewData.transport === tr ? 'selected' : '' %>><%= tr %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div><label>Tiempo estimado de traslado</label><input data-field="commute" value="<%= interviewData.commute || '' %>" placeholder="Ej. 30 minutos"></div>
+            <div><label>Pretensión salarial</label><input data-field="salary" value="<%= interviewData.salary || candidate.salary || '' %>" placeholder="Monto y neto/bruto"></div>
+            <div><label>Disponibilidad de incorporación</label><input data-field="availability" value="<%= interviewData.availability || candidate.start_date || '' %>" placeholder="Fecha / preaviso"></div>
+            <div class="ifull">
+              <label>Aspectos personales (contexto, no criterio de selección)</label>
+              <div class="ig">
+                <div><label>Edad</label><input data-field="age" inputmode="numeric" value="<%= interviewData.age || candidate.age || '' %>"></div>
+                <div><label>DNI (reservado)</label><input data-field="dni" value="<%= interviewData.dni || '' %>"></div>
+                <div><label>Pareja</label><input data-field="partner" value="<%= interviewData.partner || '' %>"></div>
+                <div><label>Hijos</label><input data-field="children" value="<%= interviewData.children || '' %>"></div>
+                <div class="ifull"><label>Situación familiar</label><input data-field="family" value="<%= interviewData.family || '' %>"></div>
+              </div>
+            </div>
+          </div>
+          <div class="icheckline">
+            <input id="i-leader" type="checkbox" <%= interviewData.leader ? 'checked' : '' %>>
+            <label for="i-leader">La vacante tiene personal a cargo: incluir competencias de liderazgo (L1, L2 y L3)</label>
+          </div>
+        </section>
+
+        <section class="interview-panel">
+          <h2>02 · Ajuste técnico y resultados</h2>
+          <div class="ig two">
+            <div><label>Requisitos excluyentes del perfil aprobado</label><textarea data-field="requirements" placeholder="Requisitos del puesto que correspondan"><%= interviewData.requirements || '' %></textarea></div>
+            <div><label>Conocimientos técnicos y experiencia (síntesis)</label><textarea data-field="technical" placeholder="Tareas desempeñadas, herramientas y fuentes"><%= interviewData.technical || '' %></textarea></div>
+            <div>
+              <label>Resultado Fit Cultural</label>
+              <div class="irow">
+                <select data-field="fitResult">
+                  <option value="">Pendiente</option>
+                  <% ['Alto ajuste','Ajuste medio-alto','Ajuste medio','Ajuste medio-bajo','Bajo ajuste','Favorable','Favorable con observaciones','No favorable','A validar'].forEach(function(fit) { %>
+                    <option <%= (interviewData.fitResult || candidate.cultural_fit) === fit ? 'selected' : '' %>><%= fit %></option>
+                  <% }) %>
+                </select>
+                <label class="icheckline"><input type="checkbox" data-field="fitNA" style="width:16px" <%= interviewData.fitNA ? 'checked' : '' %>>N/A</label>
+              </div>
+            </div>
+            <div>
+              <label>Resultado Prueba técnica</label>
+              <div class="irow">
+                <input data-field="testResult" type="number" min="0" max="100" step="0.01" value="<%= interviewData.testResult || candidate.technical_test || '' %>" placeholder="Valor (0-100)">
+                <label class="icheckline"><input type="checkbox" data-field="testNA" style="width:16px" <%= interviewData.testNA ? 'checked' : '' %>>N/A</label>
+              </div>
+            </div>
+            <div class="ifull">
+              <label>Resultados obtenidos / valor agregado demostrado</label>
+              <textarea data-field="results" placeholder="Situación, acción propia, resultado, indicador y fuente"><%= interviewData.results || '' %></textarea>
+            </div>
+            <div class="ifull">
+              <label>Aclaraciones</label>
+              <textarea data-field="clarifications" placeholder="Aclaraciones o notas adicionales sobre el candidato o la entrevista"><%= interviewData.clarifications || '' %></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="interview-panel">
+          <h2>03 · Entrevista por competencias</h2>
+          <div class="iwarn">Elegí una pregunta sugerida de cada competencia (Media, Alta o Compleja) y anotá la respuesta según Situación → Acción → Resultado.</div>
+          <div id="i-competencies" style="margin-top:10px"></div>
+        </section>
+
+        <section class="interview-panel">
+          <h2>04 · Síntesis y decisión profesional</h2>
+          <div class="ig two">
+            <div><label>Fortalezas</label><textarea data-field="strengths"><%= interviewData.strengths || '' %></textarea></div>
+            <div><label>Oportunidades de mejora</label><textarea data-field="risks"><%= interviewData.risks || '' %></textarea></div>
+            <div class="ifull"><label>Mentalidad digital e IA: uso y evidencia</label><textarea data-field="digital" placeholder="Herramientas digitales o IA utilizadas y beneficio medido"><%= interviewData.digital || '' %></textarea></div>
+            <div class="ifull"><label>Autonomía, adaptabilidad y productividad</label><textarea data-field="autonomy"><%= interviewData.autonomy || '' %></textarea></div>
+          </div>
+          <div class="ig two" style="margin-top:10px">
+            <div>
+              <label>Resultado del análisis</label>
+              <select data-field="decision">
+                <option value="">Pendiente de definir</option>
+                <option <%= interviewData.decision === 'Elegible' ? 'selected' : '' %>>Elegible</option>
+                <option <%= interviewData.decision === 'Elegible con Reservas' ? 'selected' : '' %>>Elegible con Reservas</option>
+                <option <%= interviewData.decision === 'Elegible para otra posición' ? 'selected' : '' %>>Elegible para otra posición</option>
+                <option <%= interviewData.decision === 'No Elegible' ? 'selected' : '' %>>No Elegible</option>
+              </select>
+            </div>
+          </div>
+          <label style="margin-top:10px">Conclusión ejecutiva (3 a 4 líneas)</label>
+          <textarea data-field="conclusion" placeholder="Fundamento objetivo para el responsable de la vacante"><%= interviewData.conclusion || '' %></textarea>
+        </section>
+      </div>
+
+      <!-- VISTA PREVIA A4 -->
+      <aside class="interview-preview preview-sticky">
+        <div class="interview-panel">
+          <h2>Informe ejecutivo · vista A4</h2>
+          <p class="inote" style="margin-bottom:8px">Se actualiza mientras editás. Al guardar, este informe se adjunta automáticamente al PDF final.</p>
+          <div id="i-report" class="ireport"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script nonce="<%= cspNonce %>">
+const CANDIDATE_ID = <%= candidate.id %>;
+const INITIAL_DATA = <%- JSON.stringify(interviewData || {}) %>;
+
+const AREAS={'Ventas / ATC / Rental / MaquinAr':['E2','E1'],'Oficina Técnica':['E4','E5'],'Depósito y Logística':['E3','E5'],'Administración':['E3','E5'],'Sistemas':['E5','E4'],'Recursos Humanos':['E1','E3'],'Marketing':['E1','E5'],'Servicios Generales':['E3','E4'],'Dirección':['E2','E4'],'Capacitación':['E1','E3']};
+const NOMINA_BRANCHES=['AÑELO','BUENOS AIRES','CASA CENTRAL','CENTENARIO','CHACO','CHACO - RESISTENCIA','COMODORO RIVADAVIA','CÓRDOBA','ENTRE RÍOS','JUJUY','MAQUINAR','MENDOZA','MIELES','MISIONES','LA PLATA','ROSARIO','SAN JUAN'];
+const NOMINA_FUNCTIONS=['ADMINISTRADOR','ADMINISTRATIVO','ANALISTA','ASESOR','ASISTENTE','AUDITOR','AUXILIAR','CADETE','CAPACITADOR','CHOFER','COLIDER','COORDINADOR','DESARROLLADOR','DIBUJANTE TÉCNICO','DIRECTOR','DISEÑADOR','EDITOR','ELECTRICISTA','ESPECIALISTA','GERENTE','HERRERO','INGENIERO DE SERVICIO','LÍDER DE EQUIPO','OPERARIO','PINTOR','PROGRAMADOR','RESPONSABLE','TORNERO','TÉCNICO'];
+const NOMINA_SECTORS=['ADMINISTRACIÓN','CAPACITACIÓN','COMERCIAL','COMPRAS','CONTROL DE CALIDAD','COORDINACIÓN','DEPÓSITO','DIRECCIÓN','LOGÍSTICA','MANTENIMIENTO','MARKETING','MARKETPLACE','OFICINA TÉCNICA','OPERACIONES','PRODUCCIÓN','RECURSOS HUMANOS','SISTEMAS','TÉCNICO'];
+
+const COMP={
+C1:{name:'Orientación al Cliente — Todos somos ATC',questions:['Contame una situación reciente en la que un cliente tuvo un problema que involucraba a otra área. ¿Qué hiciste personalmente para resolverlo y cómo verificaste el cierre?','Describí un reclamo crítico que escaló o amenazó una relación comercial. ¿Qué alternativas ofreciste, cómo coordinaste con otros y qué resultado obtuvo el cliente?','Relatá un patrón de reclamos que detectaste antes de que se agravara. ¿Qué cambio de proceso impulsaste, quiénes lo adoptaron y qué indicadores probaron que mejoró el servicio?']},
+C2:{name:'Dinamismo y Ejecución',questions:['Contame una iniciativa que ejecutaste sin recibir instrucciones detalladas. ¿Qué pasos concretos realizaste y en qué plazo la cerraste?','Recordá un objetivo exigente que se trabó por recursos o decisiones ajenas. ¿Cómo destrabaste la situación y qué resultado entregaste?','Describí un proyecto urgente de alto impacto que hayas llevado de la idea a la implementación. ¿Qué decisiones asumiste, cómo coordinaste involucrados y qué quedó funcionando con resultados medibles?']},
+C3:{name:'Adaptabilidad y Flexibilidad',questions:['Recordá una modificación relevante de prioridades o metodología. ¿Cómo reorganizaste tu trabajo y qué resultados lograste sostener?','Describí una ocasión en que debiste aprender una herramienta nueva mientras mantenías tus objetivos. ¿Cómo lo hiciste y cómo mediste tu adaptación?','Contame una transformación inesperada que generó resistencia en tu equipo o área. ¿Qué hiciste personalmente para sostener productividad, acelerar adopción y comprobar resultados?']},
+C4:{name:'Orientación a la Rentabilidad',questions:['Contame una decisión de trabajo en la que comparaste alternativas por costo y beneficio. ¿Qué elegiste y qué impacto verificaste?','Describí una mejora que implementaste para reducir tiempos, errores o costos. ¿Cuál era la situación inicial y cómo mediste el beneficio real?','Relatá una decisión comercial u operativa compleja en la que priorizaste margen o rentabilidad frente a mayor facturación. ¿Qué cálculos utilizaste, qué sacrificaste y qué resultado económico verificable produjo?']},
+C5:{name:'Criterio Profesional',questions:['Contame una decisión que tomaste con información incompleta. ¿Qué datos buscaste, cómo fundamentaste tu criterio y cómo terminó?','Describí un error importante que asumiste ante tu equipo o responsable. ¿Qué consecuencias tuvo y qué acciones concretas aplicaste para corregirlo?','Recordá una situación en la que tu recomendación contradecía a un superior o a la mayoría. ¿Cómo evaluaste riesgos, defendiste tu decisión y respondiste por el resultado?']},
+E1:{name:'Comunicación e Influencia',questions:['Contame una ocasión en que debiste explicar una propuesta compleja a alguien con otro nivel técnico. ¿Cómo adaptaste el mensaje y comprobaste que fue comprendido?','Relatá una conversación difícil en la que lograste cambiar una postura inicial de un cliente o colega. ¿Qué escuchaste, qué argumentos utilizaste y qué acción consiguió?','Describí un desacuerdo entre áreas con intereses opuestos que ayudaste a resolver sin autoridad formal. ¿Cómo construiste consenso y qué cambio concreto se implementó?']},
+E2:{name:'Negociación',questions:['Contame una negociación reciente con objeciones de precio o condiciones. ¿Qué preparaste, qué límites definiste y cuál fue el cierre?','Describí una operación donde tuviste que elegir entre cerrar rápido y proteger el margen o la relación. ¿Qué decidiste y con qué resultado?','Relatá una negociación de alto impacto que parecía perdida. ¿Qué alternativas creaste, cómo defendiste condiciones económicas y qué beneficio verificable obtuvo la organización?']},
+E3:{name:'Planificación y Organización',questions:['Describí una semana de alta demanda con prioridades en conflicto. ¿Cómo definiste qué hacer primero y cómo evitaste incumplimientos?','Contame un proyecto cuya fecha de entrega estaba en riesgo. ¿Cómo anticipaste el desvío, replanificaste recursos y comunicaste compromisos?','Relatá una coordinación compleja entre áreas con recursos escasos. ¿Qué sistema de seguimiento diseñaste, qué cuellos de botella evitaste y qué indicadores mejoraron?']},
+E4:{name:'Resolución y Pensamiento Lateral',questions:['Contame un problema recurrente que no se resolvía con el procedimiento habitual. ¿Cómo identificaste la causa y qué alternativa propusiste?','Recordá una situación en que rechazaron tu primera solución. ¿Qué nuevas vías investigaste y cómo comprobaste cuál funcionaba?','Describí un problema de múltiples causas para el que diseñaste una solución no evidente. ¿Cómo validaste la causa raíz, qué decisiones se tomaron y cuál fue el impacto posterior?']},
+E5:{name:'Eficiencia Tecnológica',questions:['Contame una herramienta digital nueva que incorporaste por tu cuenta para resolver un problema laboral. ¿Qué tarea cambió y cómo verificaste el resultado?','Describí una automatización o uso de IA que implementaste personalmente. ¿Qué hacía antes el equipo, cuánto mejoró y cómo controlaste errores?','Relatá una transformación digital que impulsaste con usuarios resistentes y datos imperfectos. ¿Cómo aseguraste adopción, trazabilidad y calidad, y qué ahorro o mejora medible quedó funcionando?']},
+L1:{name:'Gestión y Desarrollo de Personas',questions:['Contame una situación en que detectaste una brecha de desempeño en alguien de tu equipo. ¿Qué feedback diste y qué seguimiento hiciste?','Describí cómo acompañaste a un colaborador para que ganara autonomía. ¿Qué objetivos, hitos y evidencias utilizaste para evaluar progreso?','Relatá un cambio de desempeño del equipo que hayas liderado, con personas de perfiles distintos o resistencia. ¿Cómo desarrollaste talento, resolviste conflictos y qué resultados sostenibles quedaron?']},
+L2:{name:'Toma de Decisiones Basada en Datos',questions:['Contame una decisión reciente que fundamentaste con indicadores. ¿Qué datos consultaste y qué cambió después?','Recordá un momento en que los datos contradijeron tu intuición. ¿Cómo revisaste la decisión y qué efecto tuvo sobre los resultados?','Describí un tablero o sistema de indicadores que creaste o rediseñaste para anticipar desvíos. ¿Cómo mejoraste la calidad de los datos, qué decisiones habilitó y qué impacto verificaste?']},
+L3:{name:'Gestión del Cambio y Pensamiento Estratégico',questions:['Relatá una mejora de proceso que necesitó cambiar hábitos de tu equipo. ¿Cómo explicaste el propósito y lograste que se adoptara?','Contame una transformación en la que hubo resistencia de otras áreas. ¿Qué estrategia ejecutaste, cómo mediste la adopción y qué aprendiste?','Describí un cambio estratégico que anticipaste antes de que fuera urgente. ¿Cómo construiste el caso económico, movilizaste a los responsables y verificaste resultados sostenibles?']}
+};
+
+let S = {
+  fields: Object.assign({
+    name: '<%= candidate.full_name %>',
+    company: 'Grúas San Blas',
+    source: '<%= sources[0] || "" %>',
+    branch: '<%= candidate.branch || "" %>',
+    function: '<%= candidate.job_function || candidate.position || "" %>',
+    sector: '<%= candidate.sector || "" %>',
+    area: '<%= candidate.area || "Marketing" %>',
+    decision: ''
+  }, INITIAL_DATA.fields || {}),
+  comps: INITIAL_DATA.comps || {},
+  leader: Boolean(INITIAL_DATA.leader)
+};
+
+const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const val = k => S.fields[k] || '';
+const out = (k, fallback = '—') => esc(val(k) || fallback);
+const allKeys = () => ['C1','C2','C3','C4','C5', ...(AREAS[val('area')] || AREAS.Marketing), ...(S.leader ? ['L1','L2','L3'] : [])];
+const data = k => S.comps[k] || (S.comps[k] = { choice: 0, answer: '', grade: 'PV' });
+
+function fillSelect(id, options, current) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '<option value="">Seleccionar</option>' + options.map(x => `<option value="${esc(x)}" ${x.toLowerCase() === (current||'').toLowerCase() ? 'selected' : ''}>${esc(x)}</option>`).join('') + '<option value="Otra / Especificar">Otra / Especificar</option>';
+}
+
+function initInterview() {
+  fillSelect('i-branch', NOMINA_BRANCHES, val('branch'));
+  fillSelect('i-function', NOMINA_FUNCTIONS, val('function'));
+  fillSelect('i-sector', NOMINA_SECTORS, val('sector'));
+
+  const a = document.getElementById('i-area');
+  if (a) {
+    a.innerHTML = Object.keys(AREAS).map(x => `<option ${x === val('area') ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  }
+
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const k = el.dataset.field;
+    if (el.type === 'checkbox') el.checked = val(k) === 'true';
+    else if (val(k)) el.value = val(k);
+
+    const update = () => {
+      S.fields[k] = el.type === 'checkbox' ? String(el.checked) : el.value;
+      if (k === 'area') drawCompetencies();
+      else renderReport();
+    };
+    el.addEventListener('input', update);
+    el.addEventListener('change', update);
+  });
+
+  const leaderEl = document.getElementById('i-leader');
+  if (leaderEl) {
+    leaderEl.checked = S.leader;
+    leaderEl.addEventListener('change', e => {
+      S.leader = e.target.checked;
+      drawCompetencies();
+    });
+  }
+
+  drawCompetencies();
+}
+
+function drawCompetencies() {
+  let html = '';
+  for (const key of allKeys()) {
+    const d = data(key), c = COMP[key];
+    if (!c) continue;
+    html += `<div class="competence">
+      <div class="ctop">
+        <div class="ctitle">${key} · ${esc(c.name)}</div>
+        <span class="chip">${key.startsWith('C')?'Cardinal':key.startsWith('L')?'Liderazgo':'Específica'}</span>
+      </div>
+      <div class="questions">
+        ${c.questions.map((q, i) => `<button class="qbtn ${d.choice === i ? 'active' : ''}" type="button" onclick="chooseComp('${key}', ${i})"><b>${['Media','Alta','Compleja'][i]}</b><br>${esc(q)}</button>`).join('')}
+      </div>
+      <div class="qtext"><b>Pregunta orientativa:</b> ${esc(c.questions[d.choice])}</div>
+      <label>Respuesta y ejemplo real (Situación · Acción · Resultado)</label>
+      <textarea rows="2" oninput="putComp('${key}','answer',this.value)" placeholder="Registrar hechos y participación">${esc(d.answer)}</textarea>
+      <div class="ig" style="margin-top:7px">
+        <div>
+          <label>Grado GSB</label>
+          <select onchange="putComp('${key}','grade',this.value)">
+            <option ${d.grade === 'PV' ? 'selected' : ''}>PV</option>
+            ${['A','B','C','D'].map(v => `<option ${d.grade === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }
+  const el = document.getElementById('i-competencies');
+  if (el) el.innerHTML = html;
+  renderReport();
+}
+
+function chooseComp(k, i) { data(k).choice = i; drawCompetencies(); }
+function putComp(k, p, v) { data(k)[p] = v; renderReport(); }
+
+function summarizeComps() {
+  const keys = allKeys();
+  const done = keys.filter(k => data(k).answer.trim() && data(k).grade !== 'PV');
+  return { keys, done };
+}
+
+function renderReport() {
+  const { keys, done } = summarizeComps();
+  const rows = keys.map(k => {
+    const d = data(k), msg = d.answer.trim(), g = d.grade !== 'PV' && msg ? d.grade : 'PV';
+    return `<tr><td style="width:34%"><b>${k}</b> ${esc(COMP[k] ? COMP[k].name : '')}</td><td style="width:8%"><b>${esc(g)}</b></td><td style="width:58%">${esc(msg ? msg.slice(0, 105) : 'Sin evidencia registrada')}${msg.length > 105 ? '…' : ''}</td></tr>`;
+  }).join('');
+
+  const summary = val('conclusion') || 'Evaluación en curso.';
+  const testVal = k => val(k + 'NA') === 'true' ? 'N/A' : (val(k + 'Result') ? esc(val(k + 'Result')) + (k === 'test' ? '/100' : '') : 'Pendiente');
+
+  const rep = document.getElementById('i-report');
+  if (!rep) return;
+  rep.innerHTML = `
+    <div class="rh">
+      <div>
+        <span class="brand-rep">GSB</span>
+        <h1>Informe de Entrevista - Modelo de Talento GSB</h1>
+        <div class="muted">Selección &amp; Desarrollo · Uso interno</div>
+      </div>
+      <div style="text-align:right">
+        ${out('date', 'Fecha pendiente')} ${out('time', '')}<br>
+        ${out('branch', 'Sucursal pendiente')}
+      </div>
+    </div>
+    <div class="two">
+      <div>
+        <p><b>Candidato:</b> ${out('name', 'Sin completar')}</p>
+        <p><b>Empresa / cargo:</b> ${out('company')} · ${out('function')}</p>
+        <p><b>Área / sector:</b> ${out('area')} · ${out('sector')}</p>
+      </div>
+      <div>
+        <p><b>Entrevistador/es:</b> ${out('interviewer')}</p>
+        <p><b>Reclutamiento:</b> ${out('source')}</p>
+        <p><b>Educación:</b> ${out('education')} ${out('educationDetail', '')}</p>
+        <p><b>Transporte / traslado:</b> ${out('transport')} · ${out('commute')}</p>
+        <p><b>Pretensión / disponibilidad:</b> ${out('salary')} · ${out('availability')}</p>
+      </div>
+    </div>
+    <h2>Requisitos, antecedentes y resultados</h2>
+    <p><b>Excluyentes:</b> ${out('requirements')} <b>· Experiencia/técnica:</b> ${out('technical')}</p>
+    <p><b>Resultados / aporte:</b> ${out('results')}</p>
+    <p><b>Fit Cultural:</b> ${testVal('fit')} <b>· Prueba técnica:</b> ${testVal('test')}</p>
+    <p><b>Aclaraciones:</b> ${out('clarifications')}</p>
+    <h2>Competencias GSB · ${done.length}/${keys.length} evaluadas</h2>
+    <table><tr><th>Competencia</th><th>Grado</th><th>Respuesta y comportamiento</th></tr>${rows}</table>
+    <div class="two">
+      <div>
+        <h2>Fortalezas y oportunidades</h2>
+        <p><b>Fortalezas:</b> ${out('strengths')}</p>
+        <p><b>Oportunidades de mejora:</b> ${out('risks')}</p>
+      </div>
+      <div>
+        <h2>Productividad y herramientas</h2>
+        <p><b>Digital e IA:</b> ${out('digital')}</p>
+        <p><b>Autonomía / productividad:</b> ${out('autonomy')}</p>
+      </div>
+    </div>
+    <h2>Resultado del análisis</h2>
+    <div class="summary"><b>${out('decision', 'Pendiente de definir')}</b> · ${esc(summary)}</div>
+    <div class="footer">Grados: A Influencia · B Autónomo · C Mejora · D Insuficiente · PV Sin evidencia suficiente. Informe oficial Selección &amp; Desarrollo GSB.</div>
+  `;
+}
+
+function reportText() {
+  const { keys } = summarizeComps();
+  return `Informe de Entrevista - Modelo de Talento GSB
+Candidato: ${val('name')} | Empresa: ${val('company')} | Función: ${val('function')} | Sector: ${val('sector')} | Sucursal: ${val('branch')}
+Fecha: ${val('date')} ${val('time')} | Entrevistador: ${val('interviewer')} | Fuente: ${val('source')}
+EDUCACIÓN: ${val('education')} ${val('educationDetail')} | TRANSPORTE: ${val('transport')} | TRASLADO: ${val('commute')}
+EXCLUYENTES: ${val('requirements')}
+TÉCNICA: ${val('technical')} | FIT: ${val('fitNA')==='true'?'N/A':val('fitResult')} | PRUEBA: ${val('testNA')==='true'?'N/A':val('testResult')}
+RESULTADOS: ${val('results')}
+ACLARACIONES: ${val('clarifications')}
+COMPETENCIAS:
+${keys.map(k => `${k} ${COMP[k] ? COMP[k].name : ''} [${data(k).grade}]: ${data(k).answer}`).join('\n')}
+FORTALEZAS: ${val('strengths')}
+OPORTUNIDADES: ${val('risks')}
+DIGITAL/IA: ${val('digital')}
+AUTONOMÍA: ${val('autonomy')}
+RESULTADO: ${val('decision')}
+CONCLUSIÓN: ${val('conclusion')}`;
+}
+
+function copyReport() {
+  navigator.clipboard.writeText(reportText()).then(() => alert('Resumen copiado al portapapeles.')).catch(() => alert('No se pudo copiar.'));
+}
+
+async function saveInterviewReport() {
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) statusEl.textContent = 'Guardando…';
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+  try {
+    const res = await fetch(`/admin/candidatos/${CANDIDATE_ID}/informe-entrevista`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrf ? { 'x-csrf-token': csrf } : {})
+      },
+      body: JSON.stringify({ report: S })
+    });
+    if (res.ok) {
+      if (statusEl) {
+        statusEl.textContent = 'Guardado con éxito';
+        setTimeout(() => statusEl.textContent = '', 2500);
+      }
+    } else {
+      if (statusEl) statusEl.textContent = 'Error al guardar';
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Error de conexión';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initInterview);
+</script>
+
+<%- include('../partials/foot', { jsFile: 'admin.js', showFooter: false }) %>

@@ -1,0 +1,24 @@
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="/admin">
+      <span class="brand__mark">YC</span>
+      <span>
+        Carátulas
+        <span class="brand__sub">Firma electrónica del directorio</span>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/admin" <%= typeof active !== 'undefined' && active === 'panel' ? 'aria-current="page"' : '' %>>Panel</a>
+      <a href="/admin/candidatos/nuevo" <%= typeof active !== 'undefined' && active === 'nuevo' ? 'aria-current="page"' : '' %>>Nuevo candidato</a>
+      <a href="/admin/auditoria" <%= typeof active !== 'undefined' && active === 'auditoria' ? 'aria-current="page"' : '' %>>Auditoría</a>
+      <a href="/admin/seguridad" <%= typeof active !== 'undefined' && active === 'seguridad' ? 'aria-current="page"' : '' %>>Seguridad</a>
+    </nav>
+    <div class="topbar__right">
+      <span class="avatar" title="<%= adminName %>"><%= adminName.slice(0, 1).toUpperCase() %></span>
+      <form method="post" action="/admin/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--ghost btn--sm" type="submit">Salir</button>
+      </form>
+    </div>
+  </div>
+</header>

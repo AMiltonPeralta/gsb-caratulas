@@ -1,0 +1,235 @@
+<%- include('../partials/head', { title: 'Seguridad y privacidad', cssFile: 'security.css', bodyClass: 'security-body' }) %>
+
+<header class="sec-top">
+  <div class="sec-top__inner">
+    <a class="sec-brand" href="/">
+      <span class="sec-brand__mark">YC</span>
+      <span>
+        Carátulas
+        <span class="sec-brand__sub">Firma electrónica del directorio</span>
+      </span>
+    </a>
+    <span class="sec-top__tag">Seguridad y privacidad</span>
+  </div>
+</header>
+
+<main>
+  <section class="sec-hero">
+    <div class="sec-wrap sec-hero__inner">
+      <div class="sec-hero__copy">
+        <p class="sec-eyebrow">Protección del expediente</p>
+        <h1>Tus datos y tu firma, protegidos en cada paso.</h1>
+        <p class="sec-lead">
+          Cada carátula viaja por un link único, se abre en un entorno cifrado y queda sellada con un código
+          de integridad. No hace falta crear una cuenta: el link es la llave, y se puede vencer o anular.
+        </p>
+        <div class="sec-hero__actions">
+          <a class="sec-btn" href="#como-protegemos">Cómo lo protegemos</a>
+          <a class="sec-btn sec-btn--ghost" href="#limites">Qué límites tiene</a>
+        </div>
+      </div>
+
+      <div class="sec-seal" aria-label="Resumen de protecciones">
+        <div class="sec-seal__ring">
+          <span class="sec-seal__icon" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 9.5 4.1-1.1 7-5.1 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <strong>Documento sellado</strong>
+          <span>SHA-256 + auditoría</span>
+        </div>
+        <ul class="sec-seal__list">
+          <li><span class="sec-dot"></span> <%= secure ? 'Conexión HTTPS' : 'Entorno de prueba local' %></li>
+          <li><span class="sec-dot"></span> Link con vencimiento</li>
+          <li><span class="sec-dot"></span> Firma con constancia</li>
+          <li><span class="sec-dot"></span> Registro encadenado</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-strip" aria-label="Controles activos">
+    <div class="sec-wrap sec-strip__inner">
+      <div class="sec-strip__item"><strong>256 bits</strong><span>de entropía en cada link</span></div>
+      <div class="sec-strip__item"><strong>SHA-256</strong><span>sello de integridad por firma</span></div>
+      <div class="sec-strip__item"><strong>0</strong><span>contraseñas para directores</span></div>
+      <div class="sec-strip__item"><strong>Ley 25.326</strong><span>datos personales protegidos</span></div>
+    </div>
+  </section>
+
+  <section class="sec-section" id="que-protegemos">
+    <div class="sec-wrap">
+      <div class="sec-section__head">
+        <p class="sec-eyebrow">Qué cuidamos</p>
+        <h2>Tres cosas que no pueden quedar libradas al azar.</h2>
+        <p class="sec-section__lead">
+          El expediente de un candidato combina datos personales, una decisión del directorio y la evidencia
+          de esa decisión. Cada una tiene su propia protección.
+        </p>
+      </div>
+
+      <div class="sec-cards">
+        <article class="sec-card">
+          <span class="sec-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="4" y="10" width="16" height="10" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 14v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+          <h3>Datos del candidato</h3>
+          <p>El CV y el resumen solo se abren con una sesión de administración o con el link único del director. No se indexan en buscadores ni se cachean en el navegador.</p>
+        </article>
+        <article class="sec-card">
+          <span class="sec-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 17c3.5-1 4-9 7-10 1.8-.6 2.7 1.6 1.7 2.7-1.5 1.6-4.7 1-4.7 3.4 0 1.7 1.7 2.6 3.5 2.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19.5h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+          <h3>La firma del director</h3>
+          <p>La firma se dibuja en el momento, con una declaración de voluntad. Quedan registrados fecha, hora, IP y dispositivo como constancia de auditoría.</p>
+        </article>
+        <article class="sec-card">
+          <span class="sec-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9.5 14.5 14.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 16.5 6.5 18a3.5 3.5 0 0 1-5-5L5 9.5a3.5 3.5 0 0 1 5 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 7.5 17.5 6a3.5 3.5 0 0 1 5 5L19 14.5a3.5 3.5 0 0 1-5 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+          <h3>La evidencia</h3>
+          <p>Cada evento de la auditoría se encadena con el hash del anterior. Si alguien edita o borra un registro, la verificación deja de cerrar.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-section sec-section--tint" id="como-protegemos">
+    <div class="sec-wrap">
+      <div class="sec-section__head">
+        <p class="sec-eyebrow">Cómo lo hacemos</p>
+        <h2>Controles concretos, no promesas vagas.</h2>
+        <p class="sec-section__lead">
+          Estas son las medidas que están activas en el sistema. Se pueden auditar y varias se verifican solas
+          en cada descarga.
+        </p>
+      </div>
+
+      <div class="sec-grid">
+        <article class="sec-feature">
+          <span class="sec-feature__num">01</span>
+          <h3>Cifrado en tránsito</h3>
+          <p>HTTPS obligatorio en producción, HSTS y cookies <span class="mono">Secure</span>. Los datos no viajan en texto plano.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">02</span>
+          <h3>Acceso con doble factor</h3>
+          <p>Clave con hash scrypt y, opcionalmente, un código TOTP de 6 dígitos. Las sesiones vencen y se pueden revocar.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">03</span>
+          <h3>Links únicos y vencibles</h3>
+          <p>Cada director recibe un token aleatorio de 256 bits con vencimiento. Se puede anular o renovar sin afectar a los demás.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">04</span>
+          <h3>Integridad SHA-256</h3>
+          <p>El PDF firmado y cada firma tienen un código SHA-256. Si el archivo cambia, el código deja de coincidir.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">05</span>
+          <h3>Auditoría encadenada</h3>
+          <p>Aperturas, envíos y firmas quedan en una cadena de hashes. La manipulación se detecta al verificar.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">06</span>
+          <h3>Validación de archivos</h3>
+          <p>El CV tiene que ser un PDF válido y sin contenido activo. Los archivos se sirven con tipo controlado y sin caché.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">07</span>
+          <h3>Protección de formularios</h3>
+          <p>Token CSRF por sesión, control de origen y límites de intentos en el login y en la firma.</p>
+        </article>
+        <article class="sec-feature">
+          <span class="sec-feature__num">08</span>
+          <h3>Datos mínimos</h3>
+          <p>No se pide usuario ni contraseña a los directores. Solo se guarda lo necesario para identificar la firma y el expediente.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-section" id="verificar">
+    <div class="sec-wrap sec-verify">
+      <div class="sec-verify__copy">
+        <p class="sec-eyebrow">Cómo verificarlo</p>
+        <h2>La protección también se puede comprobar.</h2>
+        <p>
+          No hace falta confiar a ciegas. Al descargar el PDF firmado, el archivo incluye un código de
+          verificación y el panel muestra el hash del documento. Si dos copias tienen el mismo hash, son
+          idénticas; si cambia un carácter, el hash cambia por completo.
+        </p>
+        <ol class="sec-steps">
+          <li><span>1</span> Abrí el link y revisá que el dominio coincida con el que te enviaron.</li>
+          <li><span>2</span> Leé el resumen y el CV antes de firmar. La firma se coloca en la pestaña Carátula.</li>
+          <li><span>3</span> Al confirmar, guardá el PDF firmado y el código SHA-256 que aparece en pantalla.</li>
+          <li><span>4</span> Si tenés dudas, pedí el hash del documento a quien te envió la carátula.</li>
+        </ol>
+      </div>
+      <aside class="sec-hash-card">
+        <span class="sec-hash-card__label">Sello de integridad</span>
+        <div class="sec-hash-card__value">SHA-256</div>
+        <p>Cada firma y cada PDF firmado tienen un código único. El panel conserva el registro para comparar.</p>
+        <span class="sec-hash-card__line"></span>
+        <span class="sec-hash-card__label">Cadena de auditoría</span>
+        <p>Si un evento se altera, la verificación marca exactamente dónde se cortó la cadena.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="sec-section sec-section--dark" id="limites">
+    <div class="sec-wrap">
+      <div class="sec-section__head">
+        <p class="sec-eyebrow">Compromiso honesto</p>
+        <h2>Ningún sistema es 100% invulnerable.</h2>
+        <p class="sec-section__lead">
+          Decirlo es parte de la seguridad. Lo que hacemos es reducir el riesgo, limitar el daño posible y
+          dejar evidencia para detectar cualquier intento.
+        </p>
+      </div>
+      <div class="sec-limits">
+        <article>
+          <h3>Firma electrónica, no digital certificada</h3>
+          <p>Se usa firma electrónica con constancia de auditoría (Ley 25.506, art. 5). No reemplaza un certificado de firmante licenciado.</p>
+        </article>
+        <article>
+          <h3>Sin OCR</h3>
+          <p>Los CV escaneados como imagen se rechazan para no inventar datos. El PDF tiene que tener texto seleccionable.</p>
+        </article>
+        <article>
+          <h3>El link es confidencial</h3>
+          <p>Quien tenga el link puede abrir la carátula. Por eso vence, se puede anular y no se comparte fuera del directorio.</p>
+        </article>
+        <article>
+          <h3>Datos personales</h3>
+          <p>Los CVs se conservan solo el tiempo necesario para el proceso. Yohita define la política de retención y borrado.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-cta">
+    <div class="sec-wrap sec-cta__inner">
+      <div>
+        <p class="sec-eyebrow">¿Recibiste un link?</p>
+        <h2>Antes de firmar, verificá el dominio y leé el expediente.</h2>
+        <p>Si algo no coincide con lo que te enviaron, no firmes: pedí un link nuevo a la persona que te contactó.</p>
+      </div>
+      <div class="sec-cta__actions">
+        <a class="sec-btn" href="/">Ir al inicio</a>
+        <% if (contact) { %>
+          <a class="sec-btn sec-btn--ghost" href="<%= contact.startsWith('mailto:') || contact.startsWith('http') ? contact : `mailto:${contact}` %>">Consultar por seguridad</a>
+        <% } %>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="sec-foot">
+  <div class="sec-wrap sec-foot__inner">
+    <span><%= company %> · Documento confidencial con datos personales (Ley 25.326)</span>
+    <span><a href="/.well-known/security.txt">security.txt</a></span>
+  </div>
+</footer>
+</body>
+</html>
