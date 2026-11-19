@@ -27,13 +27,15 @@ import {
   requireCsrf,
   sameOrigin,
   readSession,
+  readRememberedUser,
   loginRateLimited,
   registerLoginFailure,
   clearLoginFailures,
   revokeOtherSessions,
   activeSessionCount,
 } from '../auth.js';
-import { totpEnabled, verifyTotp } from '../passwords.js';
+import { totpEnabled, verifyTotp, authenticateUser } from '../passwords.js';
+import { scheduleCloudSync } from '../cloud-sync.js';
 import { fileHeaders } from '../security.js';
 import {
   GSB_BRANCHES,
@@ -160,28 +162,35 @@ function shareMessage(candidate, request, req) {
 
 router.get('/admin/login', (req, res) => {
   if (readSession(req)) return res.redirect('/admin');
+  const rememberedUser = readRememberedUser(req);
   res.render('admin/login', {
     error: null,
     adminName: config.adminName,
+    rememberedUser,
     needsTotp: totpEnabled(),
   });
 });
 
 router.post('/admin/login', sameOrigin, (req, res) => {
   const ip = req.ip ?? 'desconocido';
+  const username = String(req.body?.username || '').trim();
+  const password = req.body?.password;
   const renderError = (status, error) => res.status(status).render('admin/login', {
     error,
     adminName: config.adminName,
+    rememberedUser: username || readRememberedUser(req),
     needsTotp: totpEnabled(),
   });
 
   if (loginRateLimited(ip)) {
     return renderError(429, 'Demasiados intentos fallidos. Esperá 15 minutos y volvé a probar.');
   }
-  if (!checkPassword(req.body?.password)) {
+
+  const authenticatedUser = authenticateUser(username, password);
+  if (!authenticatedUser) {
     registerLoginFailure(ip);
-    audit({ event: 'admin_login_failed', detail: 'Clave incorrecta', req });
-    return renderError(401, 'La clave no es correcta.');
+    audit({ event: 'admin_login_failed', detail: `Credenciales incorrectas para usuario: ${username || 'sin usuario'}`, req });
+    return renderError(401, 'El usuario o la contraseña no son correctos.');
   }
 
   if (totpEnabled()) {
@@ -196,14 +205,15 @@ router.post('/admin/login', sameOrigin, (req, res) => {
   }
 
   clearLoginFailures(ip);
-  issueSession(res, req);
-  audit({ event: 'admin_login', detail: totpEnabled() ? 'Clave + doble factor' : 'Clave', req });
+  issueSession(res, req, authenticatedUser);
+  audit({ event: 'admin_login', detail: `Ingreso de ${authenticatedUser.name} (${authenticatedUser.username})`, req });
   return res.redirect('/admin');
 });
 
 router.post('/admin/logout', requireAdmin, requireCsrf, (req, res) => {
   clearSession(req, res);
-  res.set('Clear-Site-Data', '"cache", "cookies", "storage"');
+  // No borramos 'storage' para preservar borradores locales en caso de cierre accidental
+  res.set('Clear-Site-Data', '"cache", "cookies"');
   res.redirect('/admin/login');
 });
 
@@ -295,12 +305,13 @@ router.post(
       start_date: fields.start_date || '',
       linkedin: fields.linkedin || '',
     };
+    const createdBy = req.admin?.username || 'yohita';
     const timestamp = nowIso();
     const { lastInsertRowid: candidateId } = q.run(
       `INSERT INTO candidates
         (full_name, position, area, client, seniority, salary, start_date, linkedin, notes,
-         cv_file_path, cv_original_name, summary_text, summary_source, cover_data_json, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         cv_file_path, cv_original_name, summary_text, summary_source, cover_data_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       fields.full_name,
       fields.position,
       fields.area || '',
@@ -315,6 +326,7 @@ router.post(
       analysis.summary,
       analysis.summaryProvider,
       JSON.stringify(extra),
+      createdBy,
       timestamp,
       timestamp,
     );
@@ -372,6 +384,7 @@ router.post(
       console.warn('[admin] no se pudo generar la carátula inicial:', err.message);
     }
 
+    scheduleCloudSync();
     return res.redirect(`/admin/candidatos/${candidateId}?ok=creado${analysis.warnings.length ? '&aviso=revisar' : ''}`);
   }),
 );
@@ -589,6 +602,7 @@ router.post(
       console.warn('[admin] no se pudo regenerar la carátula GSB:', err.message);
     }
 
+    scheduleCloudSync();
     return res.redirect(`/admin/candidatos/${candidate.id}?ok=caratula`);
   }),
 );
@@ -608,9 +622,17 @@ router.get('/admin/candidatos/:id/informe-entrevista', requireAdmin, (req, res, 
     }
   }
 
+  // Si tiene draft_data_json más reciente o complementario
+  if (candidate.draft_data_json && (!interviewData.fields || Object.keys(interviewData.fields).length === 0)) {
+    try {
+      const draft = JSON.parse(candidate.draft_data_json);
+      interviewData = { ...interviewData, ...draft };
+    } catch {}
+  }
+
   res.render('admin/interview-report', {
     candidate,
-    adminName: config.adminName,
+    adminName: req.admin?.userName || config.adminName,
     interviewData,
     sources: sourcesOf(candidate),
     GSB_SOURCES,
@@ -625,9 +647,10 @@ router.post('/admin/candidatos/:id/informe-entrevista', requireAdmin, sameOrigin
 
   const report = req.body?.report ?? {};
   const jsonStr = JSON.stringify(report);
+  const userLabel = req.admin?.userName || 'Yohita';
 
-  q.run('UPDATE candidates SET interview_report_json = ?, updated_at = ? WHERE id = ?', jsonStr, nowIso(), candidate.id);
-  audit({ candidateId: candidate.id, event: 'interview_report_updated', detail: 'Informe de entrevista actualizado por Yohita', req });
+  q.run('UPDATE candidates SET interview_report_json = ?, draft_data_json = ?, updated_at = ? WHERE id = ?', jsonStr, jsonStr, nowIso(), candidate.id);
+  audit({ candidateId: candidate.id, event: 'interview_report_updated', detail: `Informe de entrevista actualizado por ${userLabel}`, req });
 
   try {
     await renderCandidatePdf(candidate.id, { persist: true, type: 'cover', req, event: 'cover_regenerated' });
@@ -635,6 +658,7 @@ router.post('/admin/candidatos/:id/informe-entrevista', requireAdmin, sameOrigin
     console.warn('[admin] no se pudo regenerar el PDF tras actualizar informe:', err.message);
   }
 
+  scheduleCloudSync();
   res.json({ ok: true });
 }));
 
@@ -986,6 +1010,7 @@ router.post('/admin/candidatos/:id/eliminar', requireAdmin, sameOrigin, requireC
     detail: `Expediente eliminado: ${candidate.full_name} · ${removed} archivos`,
     req,
   });
+  scheduleCloudSync();
   res.redirect('/admin?ok=eliminado');
 });
 
@@ -994,6 +1019,7 @@ router.post('/admin/candidatos/:id/eliminar', requireAdmin, sameOrigin, requireC
  */
 router.post('/admin/candidatos/vaciar-todos', requireAdmin, sameOrigin, requireCsrf, (req, res) => {
   const result = deleteAllCandidates({ force: true });
+  scheduleCloudSync();
   let removed = 0;
   for (const file of result.files) {
     try {

@@ -84,14 +84,14 @@ export function clearLoginFailures(ip) {
 
 /* ── Sesiones en base de datos ─────────────────────────────────────────── */
 
-export function issueSession(res, req) {
+export function issueSession(res, req, user = { username: 'yohita', name: 'Yohita' }) {
   cleanupSessions();
   const token = crypto.randomBytes(32).toString('base64url');
   const csrfToken = crypto.randomBytes(24).toString('base64url');
   const now = Date.now();
   q.run(
-    `INSERT INTO admin_sessions (token_hash, csrf_token, created_at, last_seen_at, expires_at, ip, user_agent)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO admin_sessions (token_hash, csrf_token, created_at, last_seen_at, expires_at, ip, user_agent, username, user_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     hashToken(token),
     csrfToken,
     iso(now),
@@ -99,8 +99,16 @@ export function issueSession(res, req) {
     iso(now + config.sessionTtlMs),
     req.ip ?? null,
     (req.get('user-agent') ?? '').slice(0, 400),
+    user.username || 'yohita',
+    user.name || 'Yohita',
   );
   res.cookie(COOKIE, token, { ...cookieOptions(req), maxAge: config.sessionTtlMs });
+  res.cookie('gsb_user', user.username || 'yohita', {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: false,
+    sameSite: 'lax',
+    path: '/',
+  });
   return { csrfToken, expiresAt: now + config.sessionTtlMs };
 }
 
@@ -133,6 +141,8 @@ export function readSession(req) {
     lastSeenAt: row.last_seen_at,
     ip: row.ip,
     userAgent: row.user_agent,
+    username: row.username || 'yohita',
+    userName: row.user_name || 'Yohita',
   };
 }
 
@@ -164,12 +174,24 @@ export function activeSessionCount() {
 
 /* ── Middlewares ───────────────────────────────────────────────────────── */
 
+export function readRememberedUser(req) {
+  const raw = req?.headers?.cookie ?? '';
+  const match = raw.split(';').map((c) => c.trim()).find((c) => c.startsWith('gsb_user='));
+  if (!match) return 'yohita';
+  try {
+    return decodeURIComponent(match.slice('gsb_user='.length)) || 'yohita';
+  } catch {
+    return 'yohita';
+  }
+}
+
 export function requireAdmin(req, res, next) {
   const session = readSession(req);
   if (session) {
     req.admin = session;
     res.locals.csrfToken = session.csrfToken;
     res.locals.adminSession = session;
+    res.locals.adminName = session.userName || config.adminName;
     return next();
   }
   if (req.path.startsWith('/api/') || req.path.startsWith('/admin/api/') || req.xhr || (req.get('accept') ?? '').includes('application/json')) {

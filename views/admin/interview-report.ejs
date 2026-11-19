@@ -1,6 +1,10 @@
 <%- include('../partials/head', { title: `Informe de entrevista · ${candidate.full_name}`, cssFile: 'admin.css' }) %>
 <%- include('../partials/admin-nav', { adminName, active: 'panel' }) %>
 
+<%
+  const f = (interviewData && interviewData.fields) ? Object.assign({}, interviewData.fields, interviewData) : (interviewData || {});
+%>
+
 <style>
 :root{--r:#c8102e;--dark:#202124;--mut:#647084;--line:#dfe3e9;--bg:#f5f6f8;--green:#267047;--amber:#8b6300}
 .interview-container{max-width:1170px;margin:20px auto;padding:0 16px}
@@ -8,7 +12,7 @@
 .interview-brand{font-weight:900;letter-spacing:1px;color:var(--r);font-size:20px}
 .interview-header h1{font-size:22px;margin:3px 0 4px}
 .interview-header .sub{color:var(--mut);font-size:12px}
-.interview-actions{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+.interview-actions{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0;align-items:center}
 .interview-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:16px;align-items:start}
 .interview-panel{background:white;border:1px solid var(--line);border-radius:10px;padding:15px;margin:0 0 14px}
 .interview-panel h2{font-size:14px;color:var(--r);text-transform:uppercase;letter-spacing:.4px;margin:0 0 11px}
@@ -89,10 +93,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Volver al expediente
       </a>
-      <button class="btn btn--primary btn--sm" type="button" onclick="saveInterviewReport()">Guardar cambios</button>
+      <button class="btn btn--primary btn--sm" type="button" onclick="saveInterviewReport(false)">Guardar cambios</button>
       <button class="btn btn--soft btn--sm" type="button" onclick="window.print()">Imprimir / Guardar PDF (A4)</button>
       <button class="btn btn--ghost btn--sm" type="button" onclick="copyReport()">Copiar resumen</button>
-      <span id="save-status" class="tiny" style="align-self:center;margin-left:auto;color:var(--muted)"></span>
+      <span id="save-status" class="tiny" style="align-self:center;margin-left:auto;font-size:11.5px;font-weight:600"></span>
     </div>
 
     <div class="interview-layout">
@@ -101,15 +105,15 @@
         <section class="interview-panel">
           <h2>01 · Datos de entrevista y vacante</h2>
           <div class="ig">
-            <div><label>Nombre y apellido</label><input data-field="name" value="<%= interviewData.name || candidate.full_name %>" placeholder="Candidato/a"></div>
+            <div><label>Nombre y apellido</label><input data-field="name" value="<%= f.name || candidate.full_name %>" placeholder="Candidato/a"></div>
             <div>
               <label>Empresa</label>
               <select data-field="company">
                 <option value="">Seleccionar</option>
-                <option <%= (interviewData.company || 'Grúas San Blas') === 'Grúas San Blas' ? 'selected' : '' %>>Grúas San Blas</option>
-                <option <%= interviewData.company === 'MaquinAr / Daemar' ? 'selected' : '' %>>MaquinAr / Daemar</option>
-                <option <%= interviewData.company === 'ArgenMieles' ? 'selected' : '' %>>ArgenMieles</option>
-                <option <%= interviewData.company === 'Otra' ? 'selected' : '' %>>Otra</option>
+                <option <%= (f.company || 'Grúas San Blas') === 'Grúas San Blas' ? 'selected' : '' %>>Grúas San Blas</option>
+                <option <%= f.company === 'MaquinAr / Daemar' ? 'selected' : '' %>>MaquinAr / Daemar</option>
+                <option <%= f.company === 'ArgenMieles' ? 'selected' : '' %>>ArgenMieles</option>
+                <option <%= f.company === 'Otra' ? 'selected' : '' %>>Otra</option>
               </select>
             </div>
             <div>
@@ -117,10 +121,10 @@
               <select data-field="source">
                 <option value="">Seleccionar</option>
                 <% GSB_SOURCES.forEach(function(s) { %>
-                  <option <%= (interviewData.source || (sources[0] || '')) === s ? 'selected' : '' %>><%= s %></option>
+                  <option <%= (f.source || (sources[0] || '')) === s ? 'selected' : '' %>><%= s %></option>
                 <% }) %>
-                <option <%= interviewData.source === 'LinkedIn' ? 'selected' : '' %>>LinkedIn</option>
-                <option <%= interviewData.source === 'Otro' ? 'selected' : '' %>>Otro</option>
+                <option <%= f.source === 'LinkedIn' ? 'selected' : '' %>>LinkedIn</option>
+                <option <%= f.source === 'Otro' ? 'selected' : '' %>>Otro</option>
               </select>
             </div>
             <div>
@@ -139,47 +143,47 @@
               <label>Área (competencias GSB)</label>
               <select data-field="area" id="i-area"></select>
             </div>
-            <div><label>Fecha de entrevista</label><input type="date" data-field="date" value="<%= interviewData.date || '' %>"></div>
-            <div><label>Hora</label><input type="time" data-field="time" value="<%= interviewData.time || '' %>"></div>
+            <div><label>Fecha de entrevista</label><input type="date" data-field="date" value="<%= f.date || '' %>"></div>
+            <div><label>Hora</label><input type="time" data-field="time" value="<%= f.time || '' %>"></div>
             <div class="ifull">
               <label>Entrevistadores/as (podés ingresar varios nombres)</label>
-              <textarea data-field="interviewer" rows="2" placeholder="Nombres de los entrevistadores"><%= interviewData.interviewer || '' %></textarea>
+              <textarea data-field="interviewer" rows="2" placeholder="Nombres de los entrevistadores"><%= f.interviewer || '' %></textarea>
             </div>
             <div>
               <label>Nivel educativo</label>
               <select data-field="education">
                 <option value="">Seleccionar</option>
                 <% ['Primario incompleto','Primario completo','Secundario incompleto','Secundario completo','Terciario en curso','Terciario completo','Universitario en curso','Universitario completo','Posgrado en curso','Posgrado completo','Otro / A validar'].forEach(function(ed) { %>
-                  <option <%= interviewData.education === ed ? 'selected' : '' %>><%= ed %></option>
+                  <option <%= f.education === ed ? 'selected' : '' %>><%= ed %></option>
                 <% }) %>
               </select>
             </div>
-            <div><label>Formación / estudios (detalle)</label><input data-field="educationDetail" value="<%= interviewData.educationDetail || '' %>" placeholder="Carrera, institución, situación"></div>
+            <div><label>Formación / estudios (detalle)</label><input data-field="educationDetail" value="<%= f.educationDetail || '' %>" placeholder="Carrera, institución, situación"></div>
             <div>
               <label>Medio de transporte</label>
               <select data-field="transport">
                 <option value="">Seleccionar</option>
                 <% ['Auto Propio','Auto Familiar','Motocicleta','Bicicleta','Colectivo','Otros'].forEach(function(tr) { %>
-                  <option <%= interviewData.transport === tr ? 'selected' : '' %>><%= tr %></option>
+                  <option <%= f.transport === tr ? 'selected' : '' %>><%= tr %></option>
                 <% }) %>
               </select>
             </div>
-            <div><label>Tiempo estimado de traslado</label><input data-field="commute" value="<%= interviewData.commute || '' %>" placeholder="Ej. 30 minutos"></div>
-            <div><label>Pretensión salarial</label><input data-field="salary" value="<%= interviewData.salary || candidate.salary || '' %>" placeholder="Monto y neto/bruto"></div>
-            <div><label>Disponibilidad de incorporación</label><input data-field="availability" value="<%= interviewData.availability || candidate.start_date || '' %>" placeholder="Fecha / preaviso"></div>
+            <div><label>Tiempo estimado de traslado</label><input data-field="commute" value="<%= f.commute || '' %>" placeholder="Ej. 30 minutos"></div>
+            <div><label>Pretensión salarial</label><input data-field="salary" value="<%= f.salary || candidate.salary || '' %>" placeholder="Monto y neto/bruto"></div>
+            <div><label>Disponibilidad de incorporación</label><input data-field="availability" value="<%= f.availability || candidate.start_date || '' %>" placeholder="Fecha / preaviso"></div>
             <div class="ifull">
               <label>Aspectos personales (contexto, no criterio de selección)</label>
               <div class="ig">
-                <div><label>Edad</label><input data-field="age" inputmode="numeric" value="<%= interviewData.age || candidate.age || '' %>"></div>
-                <div><label>DNI (reservado)</label><input data-field="dni" value="<%= interviewData.dni || '' %>"></div>
-                <div><label>Pareja</label><input data-field="partner" value="<%= interviewData.partner || '' %>"></div>
-                <div><label>Hijos</label><input data-field="children" value="<%= interviewData.children || '' %>"></div>
-                <div class="ifull"><label>Situación familiar</label><input data-field="family" value="<%= interviewData.family || '' %>"></div>
+                <div><label>Edad</label><input data-field="age" inputmode="numeric" value="<%= f.age || candidate.age || '' %>"></div>
+                <div><label>DNI (reservado)</label><input data-field="dni" value="<%= f.dni || '' %>"></div>
+                <div><label>Pareja</label><input data-field="partner" value="<%= f.partner || '' %>"></div>
+                <div><label>Hijos</label><input data-field="children" value="<%= f.children || '' %>"></div>
+                <div class="ifull"><label>Situación familiar</label><input data-field="family" value="<%= f.family || '' %>"></div>
               </div>
             </div>
           </div>
           <div class="icheckline">
-            <input id="i-leader" type="checkbox" <%= interviewData.leader ? 'checked' : '' %>>
+            <input id="i-leader" type="checkbox" <%= (f.leader || interviewData.leader) ? 'checked' : '' %>>
             <label for="i-leader">La vacante tiene personal a cargo: incluir competencias de liderazgo (L1, L2 y L3)</label>
           </div>
         </section>
@@ -187,34 +191,34 @@
         <section class="interview-panel">
           <h2>02 · Ajuste técnico y resultados</h2>
           <div class="ig two">
-            <div><label>Requisitos excluyentes del perfil aprobado</label><textarea data-field="requirements" placeholder="Requisitos del puesto que correspondan"><%= interviewData.requirements || '' %></textarea></div>
-            <div><label>Conocimientos técnicos y experiencia (síntesis)</label><textarea data-field="technical" placeholder="Tareas desempeñadas, herramientas y fuentes"><%= interviewData.technical || '' %></textarea></div>
+            <div><label>Requisitos excluyentes del perfil aprobado</label><textarea data-field="requirements" placeholder="Requisitos del puesto que correspondan"><%= f.requirements || '' %></textarea></div>
+            <div><label>Conocimientos técnicos y experiencia (síntesis)</label><textarea data-field="technical" placeholder="Tareas desempeñadas, herramientas y fuentes"><%= f.technical || '' %></textarea></div>
             <div>
               <label>Resultado Fit Cultural</label>
               <div class="irow">
                 <select data-field="fitResult">
                   <option value="">Pendiente</option>
                   <% ['Alto ajuste','Ajuste medio-alto','Ajuste medio','Ajuste medio-bajo','Bajo ajuste','Favorable','Favorable con observaciones','No favorable','A validar'].forEach(function(fit) { %>
-                    <option <%= (interviewData.fitResult || candidate.cultural_fit) === fit ? 'selected' : '' %>><%= fit %></option>
+                    <option <%= (f.fitResult || candidate.cultural_fit) === fit ? 'selected' : '' %>><%= fit %></option>
                   <% }) %>
                 </select>
-                <label class="icheckline"><input type="checkbox" data-field="fitNA" style="width:16px" <%= interviewData.fitNA ? 'checked' : '' %>>N/A</label>
+                <label class="icheckline"><input type="checkbox" data-field="fitNA" style="width:16px" <%= f.fitNA ? 'checked' : '' %>>N/A</label>
               </div>
             </div>
             <div>
               <label>Resultado Prueba técnica</label>
               <div class="irow">
-                <input data-field="testResult" type="number" min="0" max="100" step="0.01" value="<%= interviewData.testResult || candidate.technical_test || '' %>" placeholder="Valor (0-100)">
-                <label class="icheckline"><input type="checkbox" data-field="testNA" style="width:16px" <%= interviewData.testNA ? 'checked' : '' %>>N/A</label>
+                <input data-field="testResult" type="number" min="0" max="100" step="0.01" value="<%= f.testResult || candidate.technical_test || '' %>" placeholder="Valor (0-100)">
+                <label class="icheckline"><input type="checkbox" data-field="testNA" style="width:16px" <%= f.testNA ? 'checked' : '' %>>N/A</label>
               </div>
             </div>
             <div class="ifull">
               <label>Resultados obtenidos / valor agregado demostrado</label>
-              <textarea data-field="results" placeholder="Situación, acción propia, resultado, indicador y fuente"><%= interviewData.results || '' %></textarea>
+              <textarea data-field="results" placeholder="Situación, acción propia, resultado, indicador y fuente"><%= f.results || '' %></textarea>
             </div>
             <div class="ifull">
               <label>Aclaraciones</label>
-              <textarea data-field="clarifications" placeholder="Aclaraciones o notas adicionales sobre el candidato o la entrevista"><%= interviewData.clarifications || '' %></textarea>
+              <textarea data-field="clarifications" placeholder="Aclaraciones o notas adicionales sobre el candidato o la entrevista"><%= f.clarifications || '' %></textarea>
             </div>
           </div>
         </section>
@@ -228,25 +232,25 @@
         <section class="interview-panel">
           <h2>04 · Síntesis y decisión profesional</h2>
           <div class="ig two">
-            <div><label>Fortalezas</label><textarea data-field="strengths"><%= interviewData.strengths || '' %></textarea></div>
-            <div><label>Oportunidades de mejora</label><textarea data-field="risks"><%= interviewData.risks || '' %></textarea></div>
-            <div class="ifull"><label>Mentalidad digital e IA: uso y evidencia</label><textarea data-field="digital" placeholder="Herramientas digitales o IA utilizadas y beneficio medido"><%= interviewData.digital || '' %></textarea></div>
-            <div class="ifull"><label>Autonomía, adaptabilidad y productividad</label><textarea data-field="autonomy"><%= interviewData.autonomy || '' %></textarea></div>
+            <div><label>Fortalezas</label><textarea data-field="strengths"><%= f.strengths || '' %></textarea></div>
+            <div><label>Oportunidades de mejora</label><textarea data-field="risks"><%= f.risks || '' %></textarea></div>
+            <div class="ifull"><label>Mentalidad digital e IA: uso y evidencia</label><textarea data-field="digital" placeholder="Herramientas digitales o IA utilizadas y beneficio medido"><%= f.digital || '' %></textarea></div>
+            <div class="ifull"><label>Autonomía, adaptabilidad y productividad</label><textarea data-field="autonomy"><%= f.autonomy || '' %></textarea></div>
           </div>
           <div class="ig two" style="margin-top:10px">
             <div>
               <label>Resultado del análisis</label>
               <select data-field="decision">
                 <option value="">Pendiente de definir</option>
-                <option <%= interviewData.decision === 'Elegible' ? 'selected' : '' %>>Elegible</option>
-                <option <%= interviewData.decision === 'Elegible con Reservas' ? 'selected' : '' %>>Elegible con Reservas</option>
-                <option <%= interviewData.decision === 'Elegible para otra posición' ? 'selected' : '' %>>Elegible para otra posición</option>
-                <option <%= interviewData.decision === 'No Elegible' ? 'selected' : '' %>>No Elegible</option>
+                <option <%= f.decision === 'Elegible' ? 'selected' : '' %>>Elegible</option>
+                <option <%= f.decision === 'Elegible con Reservas' ? 'selected' : '' %>>Elegible con Reservas</option>
+                <option <%= f.decision === 'Elegible para otra posición' ? 'selected' : '' %>>Elegible para otra posición</option>
+                <option <%= f.decision === 'No Elegible' ? 'selected' : '' %>>No Elegible</option>
               </select>
             </div>
           </div>
           <label style="margin-top:10px">Conclusión ejecutiva (3 a 4 líneas)</label>
-          <textarea data-field="conclusion" placeholder="Fundamento objetivo para el responsable de la vacante"><%= interviewData.conclusion || '' %></textarea>
+          <textarea data-field="conclusion" placeholder="Fundamento objetivo para el responsable de la vacante"><%= f.conclusion || '' %></textarea>
         </section>
       </div>
 
@@ -264,7 +268,7 @@
 
 <script nonce="<%= cspNonce %>">
 const CANDIDATE_ID = <%= candidate.id %>;
-const INITIAL_DATA = <%- JSON.stringify(interviewData || {}) %>;
+let INITIAL_DATA = <%- JSON.stringify(interviewData || {}) %>;
 
 const AREAS={'Ventas / ATC / Rental / MaquinAr':['E2','E1'],'Oficina Técnica':['E4','E5'],'Depósito y Logística':['E3','E5'],'Administración':['E3','E5'],'Sistemas':['E5','E4'],'Recursos Humanos':['E1','E3'],'Marketing':['E1','E5'],'Servicios Generales':['E3','E4'],'Dirección':['E2','E4'],'Capacitación':['E1','E3']};
 const NOMINA_BRANCHES=['AÑELO','BUENOS AIRES','CASA CENTRAL','CENTENARIO','CHACO','CHACO - RESISTENCIA','COMODORO RIVADAVIA','CÓRDOBA','ENTRE RÍOS','JUJUY','MAQUINAR','MENDOZA','MIELES','MISIONES','LA PLATA','ROSARIO','SAN JUAN'];
@@ -287,20 +291,36 @@ L2:{name:'Toma de Decisiones Basada en Datos',questions:['Contame una decisión 
 L3:{name:'Gestión del Cambio y Pensamiento Estratégico',questions:['Relatá una mejora de proceso que necesitó cambiar hábitos de tu equipo. ¿Cómo explicaste el propósito y lograste que se adoptara?','Contame una transformación en la que hubo resistencia de otras áreas. ¿Qué estrategia ejecutaste, cómo mediste la adopción y qué aprendiste?','Describí un cambio estratégico que anticipaste antes de que fuera urgente. ¿Cómo construiste el caso económico, movilizaste a los responsables y verificaste resultados sostenibles?']}
 };
 
+// Normalizar datos iniciales provistos por el servidor
+const initialFields = Object.assign({
+  name: '<%= candidate.full_name %>',
+  company: 'Grúas San Blas',
+  source: '<%= sources[0] || "" %>',
+  branch: '<%= candidate.branch || "" %>',
+  function: '<%= candidate.job_function || candidate.position || "" %>',
+  sector: '<%= candidate.sector || "" %>',
+  area: '<%= candidate.area || "Marketing" %>',
+  decision: ''
+}, INITIAL_DATA.fields || INITIAL_DATA || {});
+
 let S = {
-  fields: Object.assign({
-    name: '<%= candidate.full_name %>',
-    company: 'Grúas San Blas',
-    source: '<%= sources[0] || "" %>',
-    branch: '<%= candidate.branch || "" %>',
-    function: '<%= candidate.job_function || candidate.position || "" %>',
-    sector: '<%= candidate.sector || "" %>',
-    area: '<%= candidate.area || "Marketing" %>',
-    decision: ''
-  }, INITIAL_DATA.fields || {}),
+  fields: initialFields,
   comps: INITIAL_DATA.comps || {},
-  leader: Boolean(INITIAL_DATA.leader)
+  leader: Boolean(INITIAL_DATA.leader || (INITIAL_DATA.fields && INITIAL_DATA.fields.leader))
 };
+
+// Restaurar borrador de localStorage si existe
+try {
+  const localSaved = localStorage.getItem('gsb_interview_' + CANDIDATE_ID);
+  if (localSaved) {
+    const parsed = JSON.parse(localSaved);
+    if (parsed) {
+      if (parsed.fields) Object.assign(S.fields, parsed.fields);
+      if (parsed.comps) Object.assign(S.comps, parsed.comps);
+      if (typeof parsed.leader !== 'undefined') S.leader = Boolean(parsed.leader);
+    }
+  }
+} catch (e) {}
 
 const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const val = k => S.fields[k] || '';
@@ -312,6 +332,24 @@ function fillSelect(id, options, current) {
   const el = document.getElementById(id);
   if (!el) return;
   el.innerHTML = '<option value="">Seleccionar</option>' + options.map(x => `<option value="${esc(x)}" ${x.toLowerCase() === (current||'').toLowerCase() ? 'selected' : ''}>${esc(x)}</option>`).join('') + '<option value="Otra / Especificar">Otra / Especificar</option>';
+}
+
+let autoSaveTimer = null;
+function triggerAutoSave() {
+  try {
+    S.updated_at = new Date().toISOString();
+    localStorage.setItem('gsb_interview_' + CANDIDATE_ID, JSON.stringify(S));
+  } catch (e) {}
+
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.innerHTML = '<span style="color:#d97706">⏳ Guardando automáticamente...</span>';
+  }
+
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveInterviewReport(true);
+  }, 1200);
 }
 
 function initInterview() {
@@ -326,11 +364,15 @@ function initInterview() {
 
   document.querySelectorAll('[data-field]').forEach(el => {
     const k = el.dataset.field;
-    if (el.type === 'checkbox') el.checked = val(k) === 'true';
-    else if (val(k)) el.value = val(k);
+    if (el.type === 'checkbox') {
+      el.checked = val(k) === 'true';
+    } else if (val(k) !== undefined && val(k) !== '') {
+      el.value = val(k);
+    }
 
     const update = () => {
       S.fields[k] = el.type === 'checkbox' ? String(el.checked) : el.value;
+      triggerAutoSave();
       if (k === 'area') drawCompetencies();
       else renderReport();
     };
@@ -343,11 +385,18 @@ function initInterview() {
     leaderEl.checked = S.leader;
     leaderEl.addEventListener('change', e => {
       S.leader = e.target.checked;
+      triggerAutoSave();
       drawCompetencies();
     });
   }
 
   drawCompetencies();
+  renderReport();
+
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado automático activo</span>';
+  }
 }
 
 function drawCompetencies() {
@@ -382,8 +431,17 @@ function drawCompetencies() {
   renderReport();
 }
 
-function chooseComp(k, i) { data(k).choice = i; drawCompetencies(); }
-function putComp(k, p, v) { data(k)[p] = v; renderReport(); }
+function chooseComp(k, i) {
+  data(k).choice = i;
+  triggerAutoSave();
+  drawCompetencies();
+}
+
+function putComp(k, p, v) {
+  data(k)[p] = v;
+  triggerAutoSave();
+  renderReport();
+}
 
 function summarizeComps() {
   const keys = allKeys();
@@ -478,9 +536,9 @@ function copyReport() {
   navigator.clipboard.writeText(reportText()).then(() => alert('Resumen copiado al portapapeles.')).catch(() => alert('No se pudo copiar.'));
 }
 
-async function saveInterviewReport() {
+async function saveInterviewReport(isAuto = false) {
   const statusEl = document.getElementById('save-status');
-  if (statusEl) statusEl.textContent = 'Guardando…';
+  if (statusEl && !isAuto) statusEl.innerHTML = '<span style="color:#d97706">Guardando…</span>';
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
   try {
     const res = await fetch(`/admin/candidatos/${CANDIDATE_ID}/informe-entrevista`, {
@@ -492,15 +550,16 @@ async function saveInterviewReport() {
       body: JSON.stringify({ report: S })
     });
     if (res.ok) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       if (statusEl) {
-        statusEl.textContent = 'Guardado con éxito';
-        setTimeout(() => statusEl.textContent = '', 2500);
+        statusEl.innerHTML = `<span style="color:#16a34a">✓ Guardado ${isAuto ? 'automáticamente' : ''} (${timeStr})</span>`;
       }
     } else {
-      if (statusEl) statusEl.textContent = 'Error al guardar';
+      if (statusEl) statusEl.innerHTML = '<span style="color:#2563eb">✓ Guardado localmente en tu navegador</span>';
     }
   } catch (e) {
-    if (statusEl) statusEl.textContent = 'Error de conexión';
+    if (statusEl) statusEl.innerHTML = '<span style="color:#2563eb">✓ Guardado localmente en tu navegador</span>';
   }
 }
 

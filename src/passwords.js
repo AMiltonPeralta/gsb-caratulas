@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
+import { q } from './db.js';
 
 /* ── Clave del panel ───────────────────────────────────────────────────── */
 
@@ -45,6 +46,53 @@ export function checkPassword(candidate) {
   const hash = (value) => crypto.createHash('sha256').update(value).digest();
   return safeEqual(hash(candidate), hash(config.adminPassword));
 }
+
+/**
+ * Autentica un usuario con nombre de usuario y contraseña.
+ * Soporta usuarios guardados en la base de datos o los perfiles oficiales (yohita, yoha, admin, milton).
+ */
+export function authenticateUser(username, password) {
+  if (!password) return null;
+  const cleanUser = String(username || 'yohita').trim().toLowerCase();
+  const isMasterPassword = checkPassword(password);
+
+  // 1. Intentar validar contra la tabla users en SQLite
+  try {
+    const userRow = q.get('SELECT * FROM users WHERE username = ? COLLATE NOCASE', cleanUser);
+    if (userRow) {
+      const matchHash = userRow.password_hash ? verifyPasswordHash(password, userRow.password_hash) : false;
+      const matchPlain = userRow.password_plain ? safeEqual(password, userRow.password_plain) : false;
+      if (matchHash || matchPlain || isMasterPassword) {
+        return {
+          id: userRow.id,
+          username: userRow.username,
+          name: userRow.full_name,
+          role: userRow.role || 'admin',
+        };
+      }
+    }
+  } catch (err) {
+    // Si la tabla no está creada aún o falla la consulta
+  }
+
+  // 2. Si la contraseña maestra es correcta
+  if (isMasterPassword) {
+    if (['yohita', 'yoha'].includes(cleanUser) || cleanUser === '') {
+      return { id: 1, username: 'yohita', name: 'Yohita', role: 'admin' };
+    }
+    if (cleanUser === 'milton') {
+      return { id: 2, username: 'milton', name: 'Milton', role: 'admin' };
+    }
+    if (cleanUser === 'admin') {
+      return { id: 3, username: 'admin', name: 'Administrador', role: 'admin' };
+    }
+    // Cualquier otro usuario que use la clave autorizada de la empresa
+    return { id: 99, username: cleanUser, name: cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1), role: 'admin' };
+  }
+
+  return null;
+}
+
 
 /* ── Doble factor TOTP (RFC 6238) ──────────────────────────────────────── */
 

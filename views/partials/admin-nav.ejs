@@ -13,8 +13,11 @@
       <a href="/admin/auditoria" <%= typeof active !== 'undefined' && active === 'auditoria' ? 'aria-current="page"' : '' %>>Auditoría</a>
       <a href="/admin/seguridad" <%= typeof active !== 'undefined' && active === 'seguridad' ? 'aria-current="page"' : '' %>>Seguridad</a>
     </nav>
-    <div class="topbar__right">
-      <span class="avatar" title="<%= adminName %>"><%= adminName.slice(0, 1).toUpperCase() %></span>
+    <div class="topbar__right" style="display:flex;align-items:center;gap:10px">
+      <div style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text, #334155)">
+        <span class="avatar" title="<%= adminName %>" style="width:28px;height:28px;font-size:12px;display:inline-flex;align-items:center;justify-content:center"><%= adminName.slice(0, 1).toUpperCase() %></span>
+        <span><%= adminName %></span>
+      </div>
       <form method="post" action="/admin/logout">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn btn--ghost btn--sm" type="submit">Salir</button>

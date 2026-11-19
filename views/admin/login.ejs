@@ -30,7 +30,7 @@
   <section class="login__main">
     <div class="login__box">
       <h1>Panel de selección</h1>
-      <p>Ingresá con la clave de administración para gestionar candidatos y firmas.</p>
+      <p>Ingresá con tu usuario y contraseña para gestionar candidatos y firmas.</p>
 
       <% if (error) { %>
         <div class="flash flash--warn" style="margin-bottom:16px" role="alert"><%= error %></div>
@@ -38,8 +38,12 @@
 
       <form method="post" action="/admin/login" class="stack">
         <div class="field">
-          <label for="password">Clave</label>
-          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required autofocus placeholder="••••••••">
+          <label for="username">Usuario</label>
+          <input class="input" type="text" id="username" name="username" value="<%= typeof rememberedUser !== 'undefined' && rememberedUser ? rememberedUser : 'yohita' %>" required autofocus placeholder="Ej. yohita">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
         </div>
         <% if (needsTotp) { %>
           <div class="field">

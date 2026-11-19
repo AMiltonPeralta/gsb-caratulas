@@ -3,11 +3,13 @@ import path from 'node:path';
 import { config, assertProductionConfig, securityWarnings } from './config.js';
 import { runMigrations } from './migrate.js';
 import { ensureAuditChain } from './db.js';
+import { initCloudSync } from './cloud-sync.js';
 import { securityHeaders, enforceHttps, checkHost, securityTxt, robotsTxt } from './security.js';
 import adminRoutes from './routes/admin.js';
 import signRoutes from './routes/sign.js';
 
 runMigrations();
+await initCloudSync();
 ensureAuditChain();
 assertProductionConfig();
 

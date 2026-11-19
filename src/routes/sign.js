@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { q, audit } from '../db.js';
+import { scheduleCloudSync } from '../cloud-sync.js';
 import {
   getCandidate,
   getRequestByToken,
@@ -282,6 +283,8 @@ router.post('/f/:token/firmar', sameOrigin, rateLimit({ windowMs: 10 * 60 * 1000
     if (all.every((r) => r.effective_status === 'signed')) {
       audit({ candidateId: request.candidate_id, requestId: request.id, event: 'candidate_fully_signed', detail: 'Todas las firmas completas', req });
     }
+
+    scheduleCloudSync();
 
     return res.json({
       ok: true,
