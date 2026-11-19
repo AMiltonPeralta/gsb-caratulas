@@ -19,9 +19,10 @@
     <span class="thumb cand-head__avatar"><%= candidate.full_name.slice(0, 1).toUpperCase() %></span>
     <div>
       <h1>Carátula de Ingreso GSB</h1>
-      <p class="cand-head__meta">Completá los datos que faltan del CV. La carátula es fija: sólo se editan los campos de abajo.</p>
+      <p class="cand-head__meta">Completá los datos que faltan del CV. La carátula se guarda automáticamente en tiempo real.</p>
     </div>
     <div class="cand-head__actions">
+      <span id="cover-save-status" style="font-size:12px;font-weight:700;color:#16a34a;margin-right:8px;display:inline-flex;align-items:center;gap:4px">✓ Guardado automático activo</span>
       <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>">Volver al expediente</a>
       <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver PDF</a>
     </div>
@@ -29,7 +30,7 @@
 
   <% if (!completeness.complete) { %>
     <div class="flash flash--warn" style="margin-top:18px">
-      <strong>Faltan datos obligatorios para enviar a firmas:</strong>
+      <strong>Faltan datos para enviar a firmas:</strong>
       <%= completeness.required.join(' · ') %>.
     </div>
   <% } %>
@@ -39,37 +40,36 @@
     <div class="card__head">
       <div>
         <h2>Foto del ingreso</h2>
-        <p>JPG o PNG de hasta 5 MB. Se muestra en la carátula y en el PDF.</p>
+        <p>JPG o PNG de hasta 5 MB. Se muestra en la carátula y en el PDF. Guardado persistente en la nube.</p>
       </div>
+      <div id="photo-save-badge" style="font-size:12px;font-weight:700;color:#16a34a;display:none"></div>
     </div>
     <div class="card__body gsb-photo-admin">
-      <div class="gsb-photo<%= candidate.photo_path ? ' gsb-photo--con-foto' : '' %>">
-        <% if (candidate.photo_path) { %>
-          <img src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+      <div class="gsb-photo<%= (candidate.photo_data || candidate.photo_path) ? ' gsb-photo--con-foto' : '' %>" id="gsb-photo-box">
+        <% if (candidate.photo_data || candidate.photo_path) { %>
+          <img id="gsb-photo-img" src="/admin/candidatos/<%= candidate.id %>/foto?v=<%= Date.now() %>" alt="Foto de <%= candidate.full_name %>">
         <% } else { %>
-          <div class="gsb-photo__placeholder" aria-hidden="true">
+          <div class="gsb-photo__placeholder" id="gsb-photo-placeholder" aria-hidden="true">
             <span class="gsb-photo__icon">＋</span>
             <span class="gsb-photo__tx">Foto del ingreso</span>
           </div>
         <% } %>
       </div>
       <div class="stack" style="gap:10px">
-        <form method="post" action="/admin/candidatos/<%= candidate.id %>/foto" enctype="multipart/form-data" class="share" style="max-width:520px">
+        <form id="gsb-photo-form" method="post" action="/admin/candidatos/<%= candidate.id %>/foto" enctype="multipart/form-data" class="share" style="max-width:520px">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input class="input" type="file" name="photo" accept="image/png,image/jpeg" required>
-          <button class="btn btn--sm" type="submit">Subir foto</button>
+          <input class="input" type="file" id="photo-file-input" name="photo" accept="image/png,image/jpeg" required>
+          <button class="btn btn--sm" id="photo-upload-btn" type="submit">Subir foto</button>
         </form>
-        <% if (candidate.photo_path) { %>
-          <form method="post" action="/admin/candidatos/<%= candidate.id %>/foto/eliminar" data-confirm="¿Quitar la foto del ingreso?">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button class="btn btn--ghost btn--sm" type="submit">Quitar foto</button>
-          </form>
-        <% } %>
+        <form id="gsb-photo-delete-form" method="post" action="/admin/candidatos/<%= candidate.id %>/foto/eliminar" style="<%= (candidate.photo_data || candidate.photo_path) ? '' : 'display:none;' %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--ghost btn--sm" type="submit">Quitar foto</button>
+        </form>
       </div>
     </div>
   </section>
 
-  <form class="gsb-form" method="post" action="/admin/candidatos/<%= candidate.id %>/caratula" style="margin-top:18px">
+  <form id="gsb-cover-form" class="gsb-form" method="post" action="/admin/candidatos/<%= candidate.id %>/caratula" style="margin-top:18px">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <section class="gsb-sec">
@@ -149,9 +149,9 @@
           </div>
           <div>
             <div class="gsb-field">
-              <div class="gsb-field__label">Tipo de puesto *</div>
+              <div class="gsb-field__label">Tipo de puesto</div>
               <div class="gsb-toggle-edit">
-                <label><input type="radio" name="position_type" value="nuevo" <%= gsb.position_type === 'nuevo' ? 'checked' : '' %> required><span>Puesto nuevo</span></label>
+                <label><input type="radio" name="position_type" value="nuevo" <%= gsb.position_type === 'nuevo' ? 'checked' : '' %>><span>Puesto nuevo</span></label>
                 <label><input type="radio" name="position_type" value="reemplazo" <%= gsb.position_type === 'reemplazo' ? 'checked' : '' %>><span>Reemplazo</span></label>
               </div>
             </div>
@@ -221,10 +221,217 @@
     </section>
 
     <div class="gsb-form__actions">
-      <a class="btn btn--ghost" href="/admin/candidatos/<%= candidate.id %>">Cancelar</a>
-      <button class="btn" type="submit">Guardar carátula</button>
+      <a class="btn btn--ghost" href="/admin/candidatos/<%= candidate.id %>">Volver</a>
+      <button class="btn" id="btn-save-cover" type="submit">Guardar carátula</button>
     </div>
   </form>
 </main>
+
+<script nonce="<%= typeof cspNonce !== 'undefined' ? cspNonce : '' %>">
+document.addEventListener('DOMContentLoaded', function() {
+  const CANDIDATE_ID = <%= candidate.id %>;
+  const csrfToken = document.querySelector('input[name="_csrf"]')?.value || document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const form = document.getElementById('gsb-cover-form');
+  const statusEl = document.getElementById('cover-save-status');
+
+  if (!form) return;
+
+  // 1. Restaurar borrador de localStorage si existe
+  try {
+    const localDraft = localStorage.getItem('gsb_cover_' + CANDIDATE_ID);
+    if (localDraft) {
+      const parsed = JSON.parse(localDraft);
+      if (parsed && typeof parsed === 'object') {
+        Object.entries(parsed).forEach(function([name, val]) {
+          if (!name || val === undefined) return;
+          const el = form.elements[name];
+          if (!el) return;
+          if (el instanceof RadioNodeList || el.type === 'radio') {
+            const radio = form.querySelector('input[name="' + name + '"][value="' + val + '"]');
+            if (radio) radio.checked = true;
+          } else if (el.type === 'checkbox') {
+            if (Array.isArray(val)) {
+              form.querySelectorAll('input[name="' + name + '"]').forEach(function(cb) {
+                cb.checked = val.includes(cb.value);
+              });
+            } else {
+              el.checked = Boolean(val);
+            }
+          } else if (!el.value && val) {
+            el.value = val;
+          }
+        });
+      }
+    }
+  } catch (e) {}
+
+  function collectFormData() {
+    const data = {};
+    const elements = form.elements;
+    const sources = [];
+
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (!el.name || el.name === '_csrf') continue;
+      if (el.type === 'radio') {
+        if (el.checked) data[el.name] = el.value;
+      } else if (el.type === 'checkbox') {
+        if (el.name === 'recruitment_sources') {
+          if (el.checked) sources.push(el.value);
+        } else {
+          data[el.name] = el.checked;
+        }
+      } else {
+        data[el.name] = el.value;
+      }
+    }
+    data.recruitment_sources = sources;
+    return data;
+  }
+
+  let autoSaveTimer = null;
+  function triggerAutoSave() {
+    const data = collectFormData();
+    try {
+      localStorage.setItem('gsb_cover_' + CANDIDATE_ID, JSON.stringify(data));
+    } catch (e) {}
+
+    if (statusEl) {
+      statusEl.innerHTML = '<span style="color:#d97706">⏳ Guardando automáticamente...</span>';
+    }
+
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(function() {
+      fetch('/admin/candidatos/' + CANDIDATE_ID + '/caratula/autosave', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
+        },
+        body: JSON.stringify(data)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(res) {
+        if (res.ok && statusEl) {
+          statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado automático (' + (res.savedAt || 'activo') + ')</span>';
+        }
+      })
+      .catch(function() {
+        if (statusEl) {
+          statusEl.innerHTML = '<span style="color:#ef4444">⚠️ Error al autoguardar (se reintentará)</span>';
+        }
+      });
+    }, 1000);
+  }
+
+  form.addEventListener('input', triggerAutoSave);
+  form.addEventListener('change', triggerAutoSave);
+
+  // 2. Manejo asíncrono de foto sin recargar la página (así nunca se pierden los campos de texto)
+  const photoForm = document.getElementById('gsb-photo-form');
+  const photoInput = document.getElementById('photo-file-input');
+  const photoBox = document.getElementById('gsb-photo-box');
+  const photoBadge = document.getElementById('photo-save-badge');
+  const photoDeleteForm = document.getElementById('gsb-photo-delete-form');
+
+  function uploadPhotoAsync(file) {
+    if (!file) return;
+    if (photoBadge) {
+      photoBadge.style.display = 'inline-block';
+      photoBadge.style.color = '#d97706';
+      photoBadge.textContent = '⏳ Guardando foto...';
+    }
+
+    const formData = new FormData();
+    formData.append('_csrf', csrfToken);
+    formData.append('photo', file);
+
+    fetch('/admin/candidatos/' + CANDIDATE_ID + '/foto', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      },
+      body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        if (photoBadge) {
+          photoBadge.style.color = '#16a34a';
+          photoBadge.textContent = '✓ Foto guardada y protegida en la nube';
+          setTimeout(function() { photoBadge.style.display = 'none'; }, 4000);
+        }
+        if (photoDeleteForm) photoDeleteForm.style.display = '';
+        triggerAutoSave();
+      } else {
+        throw new Error(data.error || 'Error al subir');
+      }
+    })
+    .catch(function(err) {
+      if (photoBadge) {
+        photoBadge.style.color = '#ef4444';
+        photoBadge.textContent = '⚠️ ' + (err.message || 'Error al guardar foto');
+      }
+    });
+  }
+
+  if (photoInput) {
+    photoInput.addEventListener('change', function() {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        photoBox.classList.add('gsb-photo--con-foto');
+        photoBox.innerHTML = '<img id="gsb-photo-img" src="' + e.target.result + '" alt="Foto">';
+      };
+      reader.readAsDataURL(file);
+
+      uploadPhotoAsync(file);
+    });
+  }
+
+  if (photoForm) {
+    photoForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const file = photoInput.files && photoInput.files[0];
+      if (file) uploadPhotoAsync(file);
+    });
+  }
+
+  if (photoDeleteForm) {
+    photoDeleteForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!confirm('¿Quitar la foto del ingreso?')) return;
+
+      fetch('/admin/candidatos/' + CANDIDATE_ID + '/foto/eliminar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: '_csrf=' + encodeURIComponent(csrfToken)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          photoBox.classList.remove('gsb-photo--con-foto');
+          photoBox.innerHTML = '<div class="gsb-photo__placeholder" aria-hidden="true"><span class="gsb-photo__icon">＋</span><span class="gsb-photo__tx">Foto del ingreso</span></div>';
+          photoDeleteForm.style.display = 'none';
+          if (photoBadge) {
+            photoBadge.style.display = 'inline-block';
+            photoBadge.style.color = '#16a34a';
+            photoBadge.textContent = '✓ Foto eliminada';
+            setTimeout(function() { photoBadge.style.display = 'none'; }, 3000);
+          }
+        }
+      });
+    });
+  }
+});
+</script>
 
 <%- include('../partials/foot', { jsFile: 'admin.js' }) %>

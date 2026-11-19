@@ -98,7 +98,7 @@ function storeCv(file) {
   return target;
 }
 
-/** Guarda la foto del ingreso. Sólo JPG o PNG reales (se valida por magic bytes). */
+/** Guarda la foto del ingreso. Sólo JPG o PNG reales (se valida por magic bytes). Retorna { target, base64, mime } */
 function storePhoto(file) {
   if (!file?.path) return null;
   const kind = sniff(file.path);
@@ -110,9 +110,12 @@ function storePhoto(file) {
     fs.unlinkSync(file.path);
     throw new Error('La foto no puede superar los 5 MB.');
   }
+  const mime = kind === 'png' ? 'image/png' : 'image/jpeg';
+  const buffer = fs.readFileSync(file.path);
+  const base64 = buffer.toString('base64');
   const target = path.join(PHOTO_DIR, `foto-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${kind}`);
   fs.renameSync(file.path, target);
-  return target;
+  return { target, base64, mime };
 }
 
 function removeQuietly(filePath) {
@@ -497,11 +500,20 @@ router.get('/admin/candidatos/:id/caratula', requireAdmin, (req, res, next) => {
   if (candidate.rejected_at) {
     return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
   }
+
+  let mergedCandidate = { ...candidate };
+  if (candidate.cover_draft_json) {
+    try {
+      const draft = JSON.parse(candidate.cover_draft_json);
+      mergedCandidate = { ...mergedCandidate, ...draft };
+    } catch {}
+  }
+
   res.render('admin/cover-form', {
     candidate,
     adminName: config.adminName,
-    gsb: coverView(candidate),
-    completeness: coverCompleteness(candidate),
+    gsb: coverView(mergedCandidate),
+    completeness: coverCompleteness(mergedCandidate),
     GSB_BRANCHES,
     GSB_SOURCES,
     formatMoney,
@@ -509,6 +521,76 @@ router.get('/admin/candidatos/:id/caratula', requireAdmin, (req, res, next) => {
     error: null,
   });
 });
+
+router.post(
+  '/admin/candidatos/:id/caratula/autosave',
+  requireAdmin,
+  sameOrigin,
+  wrap(async (req, res) => {
+    const candidate = getCandidate(Number(req.params.id));
+    if (!candidate) return res.status(404).json({ ok: false, error: 'Candidato no encontrado' });
+
+    if (getRequests(candidate.id).some((r) => r.signature)) {
+      return res.status(409).json({ ok: false, error: 'Ya hay firmas registradas: la carátula firmada no se puede modificar.' });
+    }
+    if (candidate.rejected_at) {
+      return res.status(409).json({ ok: false, error: 'El candidato fue rechazado por el Directorio.' });
+    }
+
+    const values = coverValues(req.body);
+    const draftJson = JSON.stringify(values);
+    const fullName = values.full_name || candidate.full_name;
+
+    q.run(
+      `UPDATE candidates SET
+         full_name = ?, age = ?, branch = ?, selected_by = ?, technical_test = ?, cultural_fit = ?,
+         job_function = ?, sector = ?, area = ?, national_manager = ?, branch_manager = ?, direct_leader = ?,
+         recruitment_sources = ?, position_type = ?, replaces_name = ?,
+         agreement_category = ?, gsb_category = ?, schedule = ?, cct = ?, overtime = ?, corporate_card = ?,
+         gross_salary = ?, net_salary = ?, value_added = ?, observations = ?,
+         cover_draft_json = ?,
+         updated_at = ?
+       WHERE id = ?`,
+      fullName,
+      values.age || candidate.age,
+      values.branch || candidate.branch,
+      values.selected_by || candidate.selected_by,
+      values.technical_test || candidate.technical_test,
+      values.cultural_fit || candidate.cultural_fit,
+      values.job_function || candidate.job_function,
+      values.sector || candidate.sector,
+      values.area || candidate.area,
+      values.national_manager || candidate.national_manager,
+      values.branch_manager || candidate.branch_manager,
+      values.direct_leader || candidate.direct_leader,
+      JSON.stringify(values.sources || []),
+      values.position_type || candidate.position_type,
+      values.replaces_name || candidate.replaces_name,
+      values.agreement_category || candidate.agreement_category,
+      values.gsb_category || candidate.gsb_category,
+      values.schedule || candidate.schedule,
+      values.cct || candidate.cct,
+      values.overtime || candidate.overtime,
+      values.corporate_card || candidate.corporate_card,
+      values.gross_salary || candidate.gross_salary,
+      values.net_salary || candidate.net_salary,
+      values.value_added || candidate.value_added,
+      values.observations || candidate.observations,
+      draftJson,
+      nowIso(),
+      candidate.id,
+    );
+
+    scheduleCloudSync();
+
+    const updated = getCandidate(candidate.id);
+    return res.json({
+      ok: true,
+      savedAt: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      completeness: coverCompleteness(updated)
+    });
+  })
+);
 
 router.post(
   '/admin/candidatos/:id/caratula',
@@ -520,8 +602,13 @@ router.post(
     const candidate = getCandidate(Number(req.params.id));
     if (!candidate) return res.status(404).end();
 
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+
     const fail = (message, status = 422) => {
       if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      if (isAjax) {
+        return res.status(status).json({ ok: false, error: message });
+      }
       return res.status(status).render('admin/cover-form', {
         candidate,
         adminName: config.adminName,
@@ -546,11 +633,15 @@ router.post(
     if (!values.full_name) return fail('El nombre del postulante es obligatorio.');
 
     let photoPath = candidate.photo_path || null;
+    let photoData = candidate.photo_data || null;
+    let photoMime = candidate.photo_mime || null;
     if (req.file) {
       try {
         const stored = storePhoto(req.file);
         if (photoPath) removeQuietly(photoPath);
-        photoPath = stored;
+        photoPath = stored.target;
+        photoData = stored.base64;
+        photoMime = stored.mime;
       } catch (err) {
         return fail(err.message);
       }
@@ -563,6 +654,7 @@ router.post(
          recruitment_sources = ?, position_type = ?, replaces_name = ?,
          agreement_category = ?, gsb_category = ?, schedule = ?, cct = ?, overtime = ?, corporate_card = ?,
          gross_salary = ?, net_salary = ?, value_added = ?, observations = ?, photo_path = ?,
+         photo_data = ?, photo_mime = ?, cover_draft_json = ?,
          updated_at = ?
        WHERE id = ?`,
       values.full_name,
@@ -591,6 +683,9 @@ router.post(
       values.value_added,
       values.observations,
       photoPath,
+      photoData,
+      photoMime,
+      JSON.stringify(values),
       nowIso(),
       candidate.id,
     );
@@ -604,6 +699,10 @@ router.post(
     }
 
     scheduleCloudSync();
+
+    if (isAjax) {
+      return res.json({ ok: true, message: 'Carátula guardada correctamente' });
+    }
     return res.redirect(`/admin/candidatos/${candidate.id}?ok=caratula`);
   }),
 );
@@ -669,49 +768,111 @@ router.post(
   upload.single('photo'),
   sameOrigin,
   requireCsrf,
-  (req, res) => {
+  wrap(async (req, res) => {
     const candidate = getCandidate(Number(req.params.id));
     if (!candidate) return res.status(404).end();
-    if (candidate.rejected_at) return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
-    if (!req.file) return res.redirect(`/admin/candidatos/${candidate.id}/caratula?ok=sin-foto`);
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+
+    if (candidate.rejected_at) {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      if (isAjax) return res.status(409).json({ ok: false, error: 'El candidato fue rechazado' });
+      return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
+    }
+    if (!req.file) {
+      if (isAjax) return res.status(400).json({ ok: false, error: 'No se seleccionó ninguna imagen' });
+      return res.redirect(`/admin/candidatos/${candidate.id}/caratula?ok=sin-foto`);
+    }
     if (getRequests(candidate.id).some((r) => r.signature)) {
       if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      if (isAjax) return res.status(409).json({ ok: false, error: 'Ya hay firmas registradas: no se puede modificar la foto.' });
       return res.redirect(`/admin/candidatos/${candidate.id}?ok=firmado-no-editable`);
     }
     try {
       const stored = storePhoto(req.file);
       if (candidate.photo_path) removeQuietly(candidate.photo_path);
-      q.run('UPDATE candidates SET photo_path = ?, updated_at = ? WHERE id = ?', stored, nowIso(), candidate.id);
-      audit({ candidateId: candidate.id, event: 'photo_updated', detail: 'Foto del ingreso actualizada', req });
+      q.run(
+        'UPDATE candidates SET photo_path = ?, photo_data = ?, photo_mime = ?, updated_at = ? WHERE id = ?',
+        stored.target,
+        stored.base64,
+        stored.mime,
+        nowIso(),
+        candidate.id,
+      );
+      audit({ candidateId: candidate.id, event: 'photo_updated', detail: 'Foto del ingreso actualizada por ' + (req.admin?.userName || 'Yohita'), req });
+
+      try {
+        await renderCandidatePdf(candidate.id, { persist: true, type: 'cover', req, event: 'cover_regenerated' });
+      } catch {}
+
+      scheduleCloudSync();
+
+      if (isAjax) {
+        return res.json({
+          ok: true,
+          photoUrl: `/admin/candidatos/${candidate.id}/foto?v=${Date.now()}`
+        });
+      }
       return res.redirect(`/admin/candidatos/${candidate.id}/caratula?ok=foto`);
     } catch (err) {
+      if (isAjax) return res.status(400).json({ ok: false, error: err.message });
       return res.redirect(`/admin/candidatos/${candidate.id}/caratula?ok=foto-invalida`);
     }
-  },
+  }),
 );
 
-router.post('/admin/candidatos/:id/foto/eliminar', requireAdmin, sameOrigin, requireCsrf, (req, res) => {
+router.post('/admin/candidatos/:id/foto/eliminar', requireAdmin, sameOrigin, requireCsrf, wrap(async (req, res) => {
   const candidate = getCandidate(Number(req.params.id));
   if (!candidate) return res.status(404).end();
-  if (candidate.rejected_at) return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
+  const isAjax = req.xhr || req.headers.accept?.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+
+  if (candidate.rejected_at) {
+    if (isAjax) return res.status(409).json({ ok: false, error: 'El candidato fue rechazado' });
+    return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
+  }
   if (getRequests(candidate.id).some((r) => r.signature)) {
+    if (isAjax) return res.status(409).json({ ok: false, error: 'Ya hay firmas registradas' });
     return res.redirect(`/admin/candidatos/${candidate.id}?ok=firmado-no-editable`);
   }
   if (candidate.photo_path) removeQuietly(candidate.photo_path);
-  q.run('UPDATE candidates SET photo_path = NULL, updated_at = ? WHERE id = ?', nowIso(), candidate.id);
-  audit({ candidateId: candidate.id, event: 'photo_removed', detail: 'Foto del ingreso eliminada', req });
+  q.run('UPDATE candidates SET photo_path = NULL, photo_data = NULL, photo_mime = NULL, updated_at = ? WHERE id = ?', nowIso(), candidate.id);
+  audit({ candidateId: candidate.id, event: 'photo_removed', detail: 'Foto del ingreso eliminada por ' + (req.admin?.userName || 'Yohita'), req });
+
+  try {
+    await renderCandidatePdf(candidate.id, { persist: true, type: 'cover', req, event: 'cover_regenerated' });
+  } catch {}
+
+  scheduleCloudSync();
+
+  if (isAjax) return res.json({ ok: true });
   res.redirect(`/admin/candidatos/${candidate.id}/caratula?ok=sin-foto`);
-});
+}));
 
 router.get('/admin/candidatos/:id/foto', requireAdmin, (req, res) => {
   const candidate = getCandidate(Number(req.params.id));
-  if (!candidate?.photo_path || !fs.existsSync(candidate.photo_path)) return res.status(404).end();
-  const ext = path.extname(candidate.photo_path).toLowerCase();
-  fileHeaders(res, {
-    type: ext === '.png' ? 'image/png' : 'image/jpeg',
-    disposition: `inline; filename="foto-${candidate.id}${ext}"`,
-  });
-  return res.sendFile(candidate.photo_path);
+  if (!candidate) return res.status(404).end();
+
+  // 1. Prioridad: servir desde photo_data en SQLite (persistente en la nube / Render)
+  if (candidate.photo_data) {
+    const mime = candidate.photo_mime || 'image/jpeg';
+    const buffer = Buffer.from(candidate.photo_data, 'base64');
+    fileHeaders(res, {
+      type: mime,
+      disposition: `inline; filename="foto-${candidate.id}.${mime === 'image/png' ? 'png' : 'jpg'}"`,
+    });
+    return res.end(buffer);
+  }
+
+  // 2. Fallback: servir desde archivo local en disco si existe
+  if (candidate.photo_path && fs.existsSync(candidate.photo_path)) {
+    const ext = path.extname(candidate.photo_path).toLowerCase();
+    fileHeaders(res, {
+      type: ext === '.png' ? 'image/png' : 'image/jpeg',
+      disposition: `inline; filename="foto-${candidate.id}${ext}"`,
+    });
+    return res.sendFile(candidate.photo_path);
+  }
+
+  return res.status(404).end();
 });
 
 router.post(

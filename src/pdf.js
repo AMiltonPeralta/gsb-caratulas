@@ -482,10 +482,25 @@ function drawSignatureBlock(page, { x, y, w, h, role, request, image, highlight 
 }
 
 async function embedPhoto(pdf, candidate) {
-  if (!candidate.photo_path || !fs.existsSync(candidate.photo_path)) return null;
+  let bytes = null;
+  let isPng = false;
+
+  if (candidate.photo_data) {
+    try {
+      bytes = Buffer.from(candidate.photo_data, 'base64');
+      isPng = candidate.photo_mime === 'image/png';
+    } catch {}
+  } else if (candidate.photo_path && fs.existsSync(candidate.photo_path)) {
+    try {
+      bytes = fs.readFileSync(candidate.photo_path);
+      isPng = candidate.photo_path.toLowerCase().endsWith('.png');
+    } catch {}
+  }
+
+  if (!bytes) return null;
+
   try {
-    const bytes = fs.readFileSync(candidate.photo_path);
-    return candidate.photo_path.toLowerCase().endsWith('.png')
+    return isPng
       ? await pdf.embedPng(bytes)
       : await pdf.embedJpg(bytes);
   } catch (err) {
