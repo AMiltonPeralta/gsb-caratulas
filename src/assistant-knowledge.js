@@ -18,6 +18,11 @@ Respondé siempre de manera cálida, clara, profesional, en español rioplatense
 export const FAQ_TOPICS = [
   {
     id: 'nuevo-candidato',
+    suggestions: [
+        "📝 ¿Cómo funciona el Informe de Entrevista?",
+        "📋 ¿Cómo editar la carátula oficial?",
+        "🖼️ ¿Cómo subir la foto del ingreso?"
+    ],
     triggers: ['cargar candidato', 'nuevo candidato', 'subir cv', 'crear candidato', 'como cargo', 'cv', 'postulante', 'agregar candidato'],
     title: '📄 ¿Cómo cargo un nuevo candidato?',
     reply: `Para cargar un nuevo candidato:
@@ -30,6 +35,11 @@ export const FAQ_TOPICS = [
   },
   {
     id: 'informe-entrevista',
+    suggestions: [
+        "🖨️ ¿Cómo imprimir o guardar en PDF (A4)?",
+        "💾 ¿Cómo funciona el autoguardado continuo?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?"
+    ],
     triggers: ['informe de entrevista', 'modelo de talento', 'competencias', 'star', 'como lleno el informe', 'grados', 'evaluacion'],
     title: '📝 ¿Cómo funciona el Informe de Entrevista?',
     reply: `El **Informe de Entrevista - Modelo de Talento GSB** evalúa el ajuste del candidato a la cultura y funciones de la empresa:
@@ -51,6 +61,11 @@ export const FAQ_TOPICS = [
   },
   {
     id: 'autoguardado',
+    suggestions: [
+        "📄 ¿Cómo cargo un nuevo candidato?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?",
+        "🛡️ ¿Cómo funciona la auditoría?"
+    ],
     triggers: ['autoguardado', 'guardar', 'se borra', 'se pierde', 'guardar cambios', 'automatico', 'guardado', 'borrador'],
     title: '💾 ¿Cómo funciona el autoguardado continuo?',
     reply: `¡Nunca vas a perder lo que escribas! El sistema cuenta con dos niveles de protección continua:
@@ -65,6 +80,11 @@ Podés salir, cerrar la ventana o volver al expediente cuando quieras con total 
   },
   {
     id: 'firmas-whatsapp',
+    suggestions: [
+        "⏰ ¿Qué hacer si un link de firma venció?",
+        "📥 ¿Dónde descargo el PDF firmado?",
+        "⚖️ ¿Qué validez legal tiene la firma?"
+    ],
     triggers: ['firmar', 'firmantes', 'whatsapp', 'como firman', 'compartir', 'link de firma', 'directorio', 'enviar link', 'celular'],
     title: '📱 ¿Cómo enviar la carátula a firmar por WhatsApp?',
     reply: `Para que los directores o responsables firmen desde su celular:
@@ -78,6 +98,11 @@ Podés salir, cerrar la ventana o volver al expediente cuando quieras con total 
   },
   {
     id: 'link-vencido',
+    suggestions: [
+        "📱 ¿Cómo enviar la carátula a firmar por WhatsApp?",
+        "📥 ¿Dónde descargo el PDF firmado?",
+        "🚫 ¿Cómo rechazar un candidato?"
+    ],
     triggers: ['vencio', 'vencido', 'expirado', 'reenviar', 'no le llega', 'validez link', 'cuanto dura el link'],
     title: '⏰ ¿Qué hacer si un link de firma venció o no le llegó al director?',
     reply: `Los links de firma tienen una vigencia por defecto de **72 horas (3 días)** por seguridad.
@@ -90,6 +115,11 @@ Si el link venció o el director no lo encuentra:
   },
   {
     id: 'rechazar-candidato',
+    suggestions: [
+        "🛡️ ¿Cómo funciona la auditoría?",
+        "🗑️ ¿Cómo eliminar candidatos?",
+        "📄 ¿Cómo cargo un nuevo candidato?"
+    ],
     triggers: ['rechazar', 'rechazo', 'motivo rechazo', 'cancelar candidato', 'no ingresa', 'dar de baja'],
     title: '🚫 ¿Cómo rechazar un candidato o registrar una decisión negativa?',
     reply: `Si el Directorio o Selección decide no avanzar con la incorporación:
@@ -107,6 +137,11 @@ Si el link venció o el director no lo encuentra:
   },
   {
     id: 'descargar-pdf',
+    suggestions: [
+        "⚖️ ¿Qué validez legal tiene la firma?",
+        "🖨️ ¿Cómo imprimir el Informe de Entrevista (A4)?",
+        "🛡️ ¿Cómo funciona la auditoría?"
+    ],
     triggers: ['descargar', 'pdf', 'descargar pdf', 'imprimir caratula', 'documento', 'bajar pdf', 'donde esta el pdf'],
     title: '📥 ¿Dónde descargo el PDF firmado o la carátula oficial?',
     reply: `Podés descargar el PDF en cualquier momento desde el expediente del candidato:
@@ -118,6 +153,11 @@ Si el link venció o el director no lo encuentra:
   },
   {
     id: 'imprimir-informe',
+    suggestions: [
+        "📝 ¿Cómo funciona el Informe de Entrevista?",
+        "📥 ¿Dónde descargo el PDF firmado?",
+        "💾 ¿Cómo funciona el autoguardado?"
+    ],
     triggers: ['imprimir informe', 'guardar informe pdf', 'pdf informe', 'exportar informe', 'a4'],
     title: '🖨️ ¿Cómo imprimir o guardar el Informe de Entrevista en PDF (A4)?',
     reply: `Para obtener una copia ejecutiva del informe de competencias:
@@ -132,6 +172,11 @@ Si el link venció o el director no lo encuentra:
   },
   {
     id: 'caratula-editar',
+    suggestions: [
+        "🖼️ ¿Cómo subir o cambiar la foto del ingreso?",
+        "💼 ¿Cómo cargar sueldos y convenio (CCT)?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?"
+    ],
     triggers: ['caratula', 'modificar caratula', 'editar caratula', 'completar caratula', 'datos ingreso'],
     title: '📋 ¿Cómo editar la carátula oficial de ingreso?',
     reply: `En el expediente del candidato hacé clic en **"Completar carátula oficial GSB"**:
@@ -143,6 +188,11 @@ Si el link venció o el director no lo encuentra:
   },
   {
     id: 'foto-ingreso',
+    suggestions: [
+        "📋 ¿Cómo editar la carátula oficial de ingreso?",
+        "💼 ¿Cómo cargar sueldos y convenio (CCT)?",
+        "📥 ¿Dónde descargo el PDF firmado?"
+    ],
     triggers: ['foto', 'foto ingreso', 'subir foto', 'cambiar foto', 'imagen', 'formato foto'],
     title: '🖼️ ¿Cómo subir o cambiar la foto del ingreso?',
     reply: `Para incluir la foto oficial del postulante:
@@ -156,6 +206,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'condiciones-cct',
+    suggestions: [
+        "📋 ¿Cómo editar la carátula oficial de ingreso?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?",
+        "📝 ¿Cómo funciona el Informe de Entrevista?"
+    ],
     triggers: ['cct', 'convenio', 'sueldo', 'remuneracion', 'horas extras', 'tarjeta corporativa', 'salario', 'bruto', 'neto'],
     title: '💼 ¿Cómo cargar sueldos, convenio (CCT) y condiciones?',
     reply: `Dentro de **"Completar carátula oficial GSB"** podés detallar las condiciones aprobadas para el puesto:
@@ -167,6 +222,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'eliminar-candidatos',
+    suggestions: [
+        "🔍 ¿Cómo buscar candidatos en el panel?",
+        "📄 ¿Cómo cargo un nuevo candidato?",
+        "🛡️ ¿Cómo funciona la auditoría?"
+    ],
     triggers: ['eliminar candidato', 'borrar candidato', 'vaciar lista', 'quitar candidato', 'borrar todo', 'eliminar todo'],
     title: '🗑️ ¿Cómo eliminar candidatos o vaciar la lista?',
     reply: `Existen dos formas de limpieza según lo que necesites:
@@ -182,6 +242,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'buscar-candidatos',
+    suggestions: [
+        "📄 ¿Cómo cargo un nuevo candidato?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?",
+        "📥 ¿Dónde descargo el PDF firmado?"
+    ],
     triggers: ['buscar', 'filtrar', 'filtro', 'encontrar candidato', 'buscador', 'buscar candidato'],
     title: '🔍 ¿Cómo buscar candidatos en el panel?',
     reply: `En la pantalla principal del panel tenés una barra de búsqueda en tiempo real:
@@ -192,6 +257,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'seguridad-validez',
+    suggestions: [
+        "🛡️ ¿Cómo funciona la auditoría?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?",
+        "👤 Usuarios y perfiles disponibles"
+    ],
     triggers: ['legal', 'ley', 'validez', 'firma digital', 'firma electronica', 'auditoria', 'seguridad', 'hash', 'sha256'],
     title: '⚖️ ¿Qué validez legal tiene la firma electrónica?',
     reply: `La firma de carátulas se rige bajo la **Ley Nacional 25.506 de Firma Electrónica**:
@@ -202,6 +272,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'auditoria',
+    suggestions: [
+        "⚖️ ¿Qué validez legal tiene la firma?",
+        "🚫 ¿Cómo rechazar un candidato?",
+        "👤 Usuarios y perfiles disponibles"
+    ],
     triggers: ['auditoria', 'historial', 'eventos', 'verificar cadena', 'quien modifico', 'trazabilidad'],
     title: '🛡️ ¿Cómo funciona la Auditoría y el control de integridad?',
     reply: `En el menú superior tenés la pestaña **"Auditoría"**:
@@ -212,6 +287,11 @@ Si necesitás cambiarla o quitarla, vas a ver los botones **"Cambiar foto"** y *
   },
   {
     id: 'usuarios',
+    suggestions: [
+        "🛡️ ¿Cómo funciona la auditoría?",
+        "🛠️ ¿Necesitás soporte técnico adicional?",
+        "💾 ¿Cómo funciona el autoguardado?"
+    ],
     triggers: ['usuario', 'contraseña', 'clave', 'sesion', 'login', 'yohita', 'milton', 'admin', 'cerrar sesion', 'salir'],
     title: '👤 Usuarios y perfiles disponibles',
     reply: `El panel cuenta con usuarios identificados para mayor seguridad:
@@ -224,6 +304,11 @@ El sistema recuerda tu usuario para que la próxima vez solo tengas que ingresar
   },
   {
     id: 'contacto-soporte',
+    suggestions: [
+        "📄 ¿Cómo cargo un nuevo candidato?",
+        "📱 ¿Cómo enviar a firmar por WhatsApp?",
+        "💾 ¿Cómo funciona el autoguardado?"
+    ],
     triggers: ['ayuda', 'error', 'soporte', 'milton', 'problema', 'falla', 'contacto', 'no funciona', 'se traba'],
     title: '🛠️ ¿Necesitás soporte técnico adicional?',
     reply: `Si encontrás algún comportamiento inesperado, tenés una consulta específica sobre la base de datos o querés sugerir una nueva función, avisale directamente a **Milton**:
@@ -251,14 +336,60 @@ export function getAssistantResponse(query) {
   const rawQ = String(query || '').trim();
   const q = cleanQuery(rawQ);
 
+  // 0. Reiniciar / Borrar respuestas / Empezar de cero
+  if (/^(borrar|limpiar|reiniciar|reset|empezar de cero|volver al inicio|desde cero|borrar respuestas|limpiar chat|nueva consulta|empezar)\b/.test(q)) {
+    return {
+      reply: '¡Listo! Conversación reiniciada para empezar desde cero. ✨\n\nPodés escribir cualquier consulta o elegir cualquiera de estos temas:',
+      suggestions: [
+        '¿Cómo cargo un nuevo candidato?',
+        '¿Cómo funciona el Informe de Entrevista?',
+        '¿Cómo funciona el autoguardado continuo?',
+        '¿Cómo enviar a firmar por WhatsApp?'
+      ]
+    };
+  }
+
+  // 0.1 Ver catálogo completo de temas
+  if (/^(ver todos|todos los temas|menu|catalogo|temas disponibles|que puedo preguntar|lista de preguntas|ayuda)\b/.test(q)) {
+    return {
+      reply: `📋 **Catálogo completo de temas de ayuda:**
+
+• **Candidatos y Legajos:**
+  - Cómo cargar nuevo candidato y subir CV en PDF.
+  - Cómo editar la carátula oficial GSB y la foto de ingreso.
+  - Carga de remuneración, convenio (CCT) y horas extras.
+
+• **Informe de Entrevista Modelo GSB:**
+  - Guía STAR con las 13 competencias laborales.
+  - Preguntas sugeridas, fit cultural y prueba técnica.
+  - Impresión y guardado en PDF (A4) en una sola hoja.
+
+• **Firmas Digitales y WhatsApp:**
+  - Envío de links directos a Selección y Directorio.
+  - Vencimiento y regeneración de enlaces.
+  - Validez legal (Ley 25.506) y sello de seguridad.
+
+• **Gestión y Auditoría:**
+  - Autoguardado continuo en tiempo real.
+  - Rechazar candidato y anular links pendientes.
+  - Descargar PDF oficial firmado.`,
+      suggestions: [
+        '¿Cómo cargo un nuevo candidato?',
+        '¿Cómo funciona el Informe de Entrevista?',
+        '¿Cómo enviar a firmar por WhatsApp?',
+        '¿Cómo funciona el autoguardado continuo?'
+      ]
+    };
+  }
+
   if (!q) {
     return {
       reply: '¡Hola! ¿En qué puedo ayudarte hoy con el panel de carátulas o el informe de entrevista?',
       suggestions: [
         '¿Cómo cargo un nuevo candidato?',
         '¿Cómo funciona el Informe de Entrevista?',
-        '¿Cómo funciona el autoguardado?',
-        '¿Cómo comparto la carátula para firmar por WhatsApp?'
+        '¿Cómo funciona el autoguardado continuo?',
+        '¿Cómo enviar la carátula a firmar por WhatsApp?'
       ]
     };
   }
@@ -270,7 +401,7 @@ export function getAssistantResponse(query) {
       suggestions: [
         '¿Cómo cargo un nuevo candidato?',
         '¿Cómo funciona el Informe de Entrevista?',
-        '¿Cómo funciona el autoguardado?',
+        '¿Cómo funciona el autoguardado continuo?',
         '¿Cómo enviar a firmar por WhatsApp?'
       ]
     };
@@ -281,8 +412,8 @@ export function getAssistantResponse(query) {
     return {
       reply: '¡De nada! Cualquier otra duda que te surja mientras trabajás con los candidatos o informes, escribime cuando quieras. ¡Muchos éxitos con las búsquedas!',
       suggestions: [
-        '¿Cómo funciona el autoguardado?',
-        '¿Cómo llenar el informe de competencias?',
+        '¿Cómo funciona el autoguardado continuo?',
+        '¿Cómo funciona el Informe de Entrevista?',
         '¿Qué validez legal tiene la firma?'
       ]
     };
@@ -315,15 +446,13 @@ export function getAssistantResponse(query) {
   }
 
   if (bestTopic && maxScore > 4) {
-    // Generar sugerencias dinámicas de otros temas afines
-    const otherSuggestions = FAQ_TOPICS
-      .filter(t => t.id !== bestTopic.id)
-      .slice(0, 3)
-      .map(t => t.title.replace(/^[^\w¿]+/, ''));
+    const suggestions = (bestTopic.suggestions && Array.isArray(bestTopic.suggestions) && bestTopic.suggestions.length)
+      ? bestTopic.suggestions
+      : FAQ_TOPICS.filter(t => t.id !== bestTopic.id).slice(0, 3).map(t => t.title.replace(/^[^\w¿]+/, ''));
 
     return {
       reply: bestTopic.reply,
-      suggestions: otherSuggestions
+      suggestions: suggestions
     };
   }
 
@@ -345,7 +474,7 @@ Si se trata de un inconveniente técnico con el servidor, podés avisarle direct
     suggestions: [
       '¿Cómo cargo un nuevo candidato?',
       '¿Cómo funciona el Informe de Entrevista?',
-      '¿Cómo funciona el autoguardado?',
+      '¿Cómo funciona el autoguardado continuo?',
       '¿Cómo enviar a firmar por WhatsApp?'
     ]
   };

@@ -22,7 +22,16 @@
           <div class="gsb-ast-subtitle"><span class="gsb-ast-dot"></span> En línea · Selección & Desarrollo</div>
         </div>
       </div>
-      <button id="gsb-assistant-close" type="button" aria-label="Cerrar asistente">✕</button>
+      <div class="gsb-ast-header-actions">
+        <button id="gsb-assistant-reset" type="button" aria-label="Borrar respuestas y reiniciar chat" title="Borrar respuestas y volver a preguntar desde cero">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span class="gsb-ast-reset-text">Reiniciar</span>
+        </button>
+        <button id="gsb-assistant-close" type="button" aria-label="Cerrar asistente" title="Cerrar">✕</button>
+      </div>
     </div>
 
     <!-- Mensajes -->
@@ -38,10 +47,11 @@
       <!-- Sugerencias rápidas iniciales -->
       <div class="gsb-ast-chips" id="gsb-ast-quick-chips">
         <button type="button" class="gsb-ast-chip" data-query="¿Cómo cargo un nuevo candidato?">📄 ¿Cómo cargo un candidato?</button>
-        <button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el Informe de Entrevista?">📝 Informe de competencias</button>
-        <button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el autoguardado?">💾 ¿Cómo funciona el autoguardado?</button>
+        <button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el Informe de Entrevista?">📝 Informe de competencias STAR</button>
+        <button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el autoguardado continuo?">💾 ¿Cómo funciona el autoguardado?</button>
         <button type="button" class="gsb-ast-chip" data-query="¿Cómo enviar la carátula a firmar por WhatsApp?">📱 Firmar por WhatsApp</button>
         <button type="button" class="gsb-ast-chip" data-query="¿Qué validez legal tiene la firma?">⚖️ Validez legal de la firma</button>
+        <button type="button" class="gsb-ast-chip" data-query="Ver todos los temas">📋 Ver todos los temas de ayuda</button>
       </div>
     </div>
 
@@ -106,9 +116,9 @@
   position: absolute;
   bottom: 60px;
   right: 0;
-  width: 380px;
+  width: 390px;
   max-width: calc(100vw - 32px);
-  height: 520px;
+  height: 530px;
   max-height: calc(100vh - 100px);
   background: #ffffff;
   border-radius: 16px;
@@ -127,7 +137,7 @@
 .gsb-ast-header {
   background: #c8102e;
   color: white;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -178,8 +188,34 @@
   display: inline-block;
 }
 
+.gsb-ast-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#gsb-assistant-reset {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+#gsb-assistant-reset:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
+}
+
 #gsb-assistant-close {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.18);
   border: none;
   color: white;
   font-size: 14px;
@@ -194,7 +230,7 @@
 }
 
 #gsb-assistant-close:hover {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.32);
 }
 
 .gsb-ast-messages {
@@ -205,6 +241,20 @@
   flex-direction: column;
   gap: 12px;
   background: #f8fafc;
+}
+
+.gsb-ast-system-note {
+  font-size: 11px;
+  color: #475569;
+  text-align: center;
+  background: #e2e8f0;
+  padding: 5px 12px;
+  border-radius: 14px;
+  margin: 6px auto;
+  display: inline-block;
+  align-self: center;
+  font-weight: 500;
+  border: 1px dashed #cbd5e1;
 }
 
 .gsb-ast-msg {
@@ -285,6 +335,34 @@
   transform: translateX(2px);
 }
 
+.gsb-ast-chip--reset {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gsb-ast-chip--reset:hover {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.gsb-ast-chip--menu {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+.gsb-ast-chip--menu:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
 .gsb-ast-footer {
   display: flex;
   align-items: center;
@@ -347,7 +425,7 @@
   }
   #gsb-assistant-window {
     width: calc(100vw - 32px);
-    height: 480px;
+    height: 490px;
   }
 }
 </style>
@@ -357,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const launcher = document.getElementById('gsb-assistant-launcher');
   const win = document.getElementById('gsb-assistant-window');
   const closeBtn = document.getElementById('gsb-assistant-close');
+  const resetBtn = document.getElementById('gsb-assistant-reset');
   const messagesBox = document.getElementById('gsb-ast-messages');
   const inputEl = document.getElementById('gsb-ast-input');
   const formEl = document.getElementById('gsb-ast-form');
@@ -376,6 +455,45 @@ document.addEventListener('DOMContentLoaded', function() {
   launcher.addEventListener('click', toggleAssistant);
   closeBtn.addEventListener('click', toggleAssistant);
 
+  function resetChat() {
+    messagesBox.innerHTML = '';
+
+    const resetNote = document.createElement('div');
+    resetNote.className = 'gsb-ast-system-note';
+    resetNote.innerHTML = '✨ Respuestas borradas. Podés consultar desde cero.';
+    messagesBox.appendChild(resetNote);
+
+    const welcomeDiv = document.createElement('div');
+    welcomeDiv.className = 'gsb-ast-msg gsb-ast-msg--bot';
+    welcomeDiv.innerHTML = '<div class="gsb-ast-bubble">' +
+      '¡Hola <%= typeof adminName !== \'undefined\' && adminName ? adminName : \'Yohita\' %>! 👋 Soy tu asistente virtual de <b>Grúas San Blas</b>.<br><br>' +
+      'Estoy acá para ayudarte a resolver cualquier duda sobre cómo cargar candidatos, completar el informe de competencias, gestionar firmas por WhatsApp o descargar carátulas.' +
+      '</div>';
+    messagesBox.appendChild(welcomeDiv);
+
+    const chipsDiv = document.createElement('div');
+    chipsDiv.className = 'gsb-ast-chips';
+    chipsDiv.id = 'gsb-ast-quick-chips';
+    chipsDiv.innerHTML = 
+      '<button type="button" class="gsb-ast-chip" data-query="¿Cómo cargo un nuevo candidato?">📄 ¿Cómo cargo un candidato?</button>' +
+      '<button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el Informe de Entrevista?">📝 Informe de competencias STAR</button>' +
+      '<button type="button" class="gsb-ast-chip" data-query="¿Cómo funciona el autoguardado continuo?">💾 ¿Cómo funciona el autoguardado?</button>' +
+      '<button type="button" class="gsb-ast-chip" data-query="¿Cómo enviar la carátula a firmar por WhatsApp?">📱 Firmar por WhatsApp</button>' +
+      '<button type="button" class="gsb-ast-chip" data-query="¿Qué validez legal tiene la firma?">⚖️ Validez legal de la firma</button>' +
+      '<button type="button" class="gsb-ast-chip gsb-ast-chip--menu" data-query="Ver todos los temas">📋 Ver todos los temas de ayuda</button>';
+    messagesBox.appendChild(chipsDiv);
+
+    if (inputEl) {
+      inputEl.value = '';
+      inputEl.focus();
+    }
+    scrollToBottom();
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', resetChat);
+  }
+
   function formatMarkdown(text) {
     if (!text) return '';
     return text
@@ -390,8 +508,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!text || !text.trim()) return;
     addMessage(text, 'user');
 
-    const oldChips = document.getElementById('gsb-ast-quick-chips');
-    if (oldChips) oldChips.remove();
+    // Remover bloques anteriores de sugerencias para no saturar la pantalla
+    document.querySelectorAll('.gsb-ast-chips').forEach(function(el) {
+      el.remove();
+    });
 
     showTyping();
 
@@ -405,15 +525,16 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       body: JSON.stringify({ message: text })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
       removeTyping();
       addMessage(data.reply, 'bot');
 
+      const chipsContainer = document.createElement('div');
+      chipsContainer.className = 'gsb-ast-chips';
+
       if (Array.isArray(data.suggestions) && data.suggestions.length) {
-        const chipsContainer = document.createElement('div');
-        chipsContainer.className = 'gsb-ast-chips';
-        data.suggestions.forEach(s => {
+        data.suggestions.forEach(function(s) {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'gsb-ast-chip';
@@ -421,11 +542,27 @@ document.addEventListener('DOMContentLoaded', function() {
           btn.textContent = s;
           chipsContainer.appendChild(btn);
         });
-        messagesBox.appendChild(chipsContainer);
       }
+
+      // Botón para borrar respuestas y reiniciar desde cero
+      const resetActionBtn = document.createElement('button');
+      resetActionBtn.type = 'button';
+      resetActionBtn.className = 'gsb-ast-chip gsb-ast-chip--reset';
+      resetActionBtn.innerHTML = '🔄 <b>Borrar respuestas y preguntar desde 0</b>';
+      chipsContainer.appendChild(resetActionBtn);
+
+      // Botón para ver el catálogo general de temas
+      const menuBtn = document.createElement('button');
+      menuBtn.type = 'button';
+      menuBtn.className = 'gsb-ast-chip gsb-ast-chip--menu';
+      menuBtn.setAttribute('data-query', 'Ver todos los temas');
+      menuBtn.textContent = '📋 Ver todos los temas disponibles';
+      chipsContainer.appendChild(menuBtn);
+
+      messagesBox.appendChild(chipsContainer);
       scrollToBottom();
     })
-    .catch(() => {
+    .catch(function() {
       removeTyping();
       addMessage('Disculpá, hubo un problema al procesar la respuesta. Por favor probá de nuevo.', 'bot');
     });
@@ -441,8 +578,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Delegación de eventos para clicks en los botones de sugerencia
+  // Delegación de eventos para clicks en botones de sugerencia y botón de reinicio
   document.addEventListener('click', function(e) {
+    const resetChip = e.target.closest('.gsb-ast-chip--reset');
+    if (resetChip) {
+      resetChat();
+      return;
+    }
     const chip = e.target.closest('.gsb-ast-chip');
     if (chip && chip.dataset.query) {
       sendQuery(chip.dataset.query);
