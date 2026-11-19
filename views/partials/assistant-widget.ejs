@@ -432,6 +432,7 @@
 
 <script nonce="<%= typeof cspNonce !== 'undefined' ? cspNonce : '' %>">
 document.addEventListener('DOMContentLoaded', function() {
+  const currentAdminName = <%- JSON.stringify(typeof adminName !== 'undefined' && adminName ? adminName : 'Yohita') %>;
   const launcher = document.getElementById('gsb-assistant-launcher');
   const win = document.getElementById('gsb-assistant-window');
   const closeBtn = document.getElementById('gsb-assistant-close');
@@ -466,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const welcomeDiv = document.createElement('div');
     welcomeDiv.className = 'gsb-ast-msg gsb-ast-msg--bot';
     welcomeDiv.innerHTML = '<div class="gsb-ast-bubble">' +
-      '¡Hola <%= typeof adminName !== \'undefined\' && adminName ? adminName : \'Yohita\' %>! 👋 Soy tu asistente virtual de <b>Grúas San Blas</b>.<br><br>' +
+      '¡Hola ' + currentAdminName + '! 👋 Soy tu asistente virtual de <b>Grúas San Blas</b>.<br><br>' +
       'Estoy acá para ayudarte a resolver cualquier duda sobre cómo cargar candidatos, completar el informe de competencias, gestionar firmas por WhatsApp o descargar carátulas.' +
       '</div>';
     messagesBox.appendChild(welcomeDiv);
