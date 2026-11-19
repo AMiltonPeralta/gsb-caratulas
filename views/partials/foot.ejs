@@ -6,6 +6,9 @@
     </div>
   </footer>
   <% } %>
+  <% if (typeof adminSession !== 'undefined' && adminSession) { %>
+    <%- include('assistant-widget') %>
+  <% } %>
   <script src="/<%= typeof jsFile !== 'undefined' && jsFile ? jsFile : 'admin.js' %>?v=<%= Date.now() %>" defer></script>
 </body>
 </html>

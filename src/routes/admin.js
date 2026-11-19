@@ -36,6 +36,7 @@ import {
 } from '../auth.js';
 import { totpEnabled, verifyTotp, authenticateUser } from '../passwords.js';
 import { scheduleCloudSync } from '../cloud-sync.js';
+import { getAssistantResponse } from '../assistant-knowledge.js';
 import { fileHeaders } from '../security.js';
 import {
   GSB_BRANCHES,
@@ -1221,6 +1222,14 @@ router.post('/admin/seguridad/revocar-sesiones', requireAdmin, sameOrigin, requi
 
 router.get('/admin/api/auditoria/verificar', requireAdmin, (req, res) => {
   res.json(verifyAuditChain());
+});
+
+/* ── Asistente Virtual GSB ────────────────────────────────────────────── */
+
+router.post('/admin/api/assistant', requireAdmin, sameOrigin, (req, res) => {
+  const query = req.body?.message || '';
+  const response = getAssistantResponse(query);
+  res.json(response);
 });
 
 export default router;
