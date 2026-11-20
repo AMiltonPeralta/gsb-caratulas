@@ -8,6 +8,16 @@
   <% } %>
   <% if (typeof adminSession !== 'undefined' && adminSession) { %>
     <%- include('assistant-widget') %>
+    <script nonce="<%= typeof cspNonce !== 'undefined' ? cspNonce : '' %>">
+      (function() {
+        // Keepalive silencioso cada 4 minutos para mantener el servidor activo y la sesión vigente
+        setInterval(function() {
+          fetch('/admin/api/heartbeat', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+          }).catch(function() {});
+        }, 4 * 60 * 1000);
+      })();
+    </script>
   <% } %>
   <script src="/<%= typeof jsFile !== 'undefined' && jsFile ? jsFile : 'admin.js' %>?v=<%= Date.now() %>" defer></script>
 </body>

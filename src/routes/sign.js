@@ -67,7 +67,7 @@ function baseData(req, request) {
     signatureGroups: matchSignatureBlocks(requests),
     gsb: coverView(candidate),
     sources: sourcesOf(candidate),
-    photoUrl: candidate.photo_path ? `/f/${request.token}/foto` : null,
+    photoUrl: (candidate.photo_data || candidate.photo_path) ? `/f/${request.token}/foto` : null,
     highlightRequestId: request.id,
     GSB_SOURCES,
     formatMoney,
@@ -386,10 +386,28 @@ router.get('/f/:token/foto', (req, res, next) => {
     const request = getRequestByToken(String(req.params.token).slice(0, 120));
     if (linkBlocked(request)) return res.status(410).end();
     const candidate = getCandidate(request.candidate_id);
-    if (!candidate?.photo_path || !fs.existsSync(candidate.photo_path)) return res.status(404).end();
-    const ext = candidate.photo_path.toLowerCase().split('.').pop();
-    fileHeaders(res, { type: ext === 'png' ? 'image/png' : 'image/jpeg' });
-    return res.sendFile(candidate.photo_path);
+    if (!candidate) return res.status(404).end();
+
+    if (candidate.photo_data) {
+      const mime = candidate.photo_mime || 'image/jpeg';
+      const buffer = Buffer.from(candidate.photo_data, 'base64');
+      fileHeaders(res, {
+        type: mime,
+        disposition: `inline; filename="foto-${candidate.id}.${mime === 'image/png' ? 'png' : 'jpg'}"`,
+      });
+      return res.end(buffer);
+    }
+
+    if (candidate.photo_path && fs.existsSync(candidate.photo_path)) {
+      const ext = path.extname(candidate.photo_path).toLowerCase();
+      fileHeaders(res, {
+        type: ext === '.png' ? 'image/png' : 'image/jpeg',
+        disposition: `inline; filename="foto-${candidate.id}${ext}"`,
+      });
+      return res.sendFile(candidate.photo_path);
+    }
+
+    return res.status(404).end();
   } catch (err) {
     return next(err);
   }

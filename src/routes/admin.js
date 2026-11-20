@@ -1393,4 +1393,8 @@ router.post('/admin/api/assistant', requireAdmin, sameOrigin, (req, res) => {
   res.json(response);
 });
 
+router.get('/admin/api/heartbeat', requireAdmin, (req, res) => {
+  res.json({ ok: true, now: nowIso(), user: req.admin?.userName || 'Yohita' });
+});
+
 export default router;

@@ -82,74 +82,178 @@ export function clearLoginFailures(ip) {
   attempts.delete(ip);
 }
 
-/* ── Sesiones en base de datos ─────────────────────────────────────────── */
+/* ── Sesiones resilientes y criptográficamente firmadas ────────────────── */
+
+const PERSISTENT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días de sesión ininterrumpida
+
+function signToken(payloadObj) {
+  const json = JSON.stringify(payloadObj);
+  const b64 = Buffer.from(json, 'utf8').toString('base64url');
+  const hmac = crypto.createHmac('sha256', config.sessionSecret).update(b64).digest('base64url');
+  return `${b64}.${hmac}`;
+}
+
+function verifyToken(rawToken) {
+  if (!rawToken || typeof rawToken !== 'string') return null;
+  const dot = rawToken.indexOf('.');
+  if (dot === -1) return null;
+  const b64 = rawToken.slice(0, dot);
+  const hmac = rawToken.slice(dot + 1);
+  if (!b64 || !hmac) return null;
+
+  try {
+    const expectedHmac = crypto.createHmac('sha256', config.sessionSecret).update(b64).digest('base64url');
+    if (hmac.length !== expectedHmac.length) return null;
+    if (!crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))) {
+      return null;
+    }
+    const json = Buffer.from(b64, 'base64url').toString('utf8');
+    const data = JSON.parse(json);
+    if (data.exp && Date.now() > data.exp) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 export function issueSession(res, req, user = { username: 'yohita', name: 'Yohita' }) {
   cleanupSessions();
-  const token = crypto.randomBytes(32).toString('base64url');
   const csrfToken = crypto.randomBytes(24).toString('base64url');
   const now = Date.now();
-  q.run(
-    `INSERT INTO admin_sessions (token_hash, csrf_token, created_at, last_seen_at, expires_at, ip, user_agent, username, user_name)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    hashToken(token),
-    csrfToken,
-    iso(now),
-    iso(now),
-    iso(now + config.sessionTtlMs),
-    req.ip ?? null,
-    (req.get('user-agent') ?? '').slice(0, 400),
-    user.username || 'yohita',
-    user.name || 'Yohita',
-  );
-  res.cookie(COOKIE, token, { ...cookieOptions(req), maxAge: config.sessionTtlMs });
+  const expiresAt = now + PERSISTENT_SESSION_TTL_MS;
+
+  const payload = {
+    u: user.username || 'yohita',
+    n: user.name || 'Yohita',
+    r: user.role || 'admin',
+    csrf: csrfToken,
+    iat: now,
+    exp: expiresAt,
+  };
+
+  const signedCookieToken = signToken(payload);
+  const tokenHashValue = hashToken(signedCookieToken);
+
+  try {
+    q.run(
+      `INSERT INTO admin_sessions (token_hash, csrf_token, created_at, last_seen_at, expires_at, ip, user_agent, username, user_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      tokenHashValue,
+      csrfToken,
+      iso(now),
+      iso(now),
+      iso(expiresAt),
+      req.ip ?? null,
+      (req.get('user-agent') ?? '').slice(0, 400),
+      user.username || 'yohita',
+      user.name || 'Yohita',
+    );
+  } catch {}
+
+  res.cookie(COOKIE, signedCookieToken, { ...cookieOptions(req), maxAge: PERSISTENT_SESSION_TTL_MS });
   res.cookie('gsb_user', user.username || 'yohita', {
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    maxAge: 365 * 24 * 60 * 60 * 1000,
     httpOnly: false,
     sameSite: 'lax',
     path: '/',
   });
-  return { csrfToken, expiresAt: now + config.sessionTtlMs };
+  return { csrfToken, expiresAt };
 }
 
 export function readSession(req) {
   const token = readCookie(req);
   if (!token) return null;
-  const row = q.get('SELECT * FROM admin_sessions WHERE token_hash = ? AND revoked_at IS NULL', hashToken(token));
-  if (!row) return null;
 
+  // 1. Verificación por firma criptográfica (no depende de SQLite en reinicios de Render)
+  const payload = verifyToken(token);
   const now = Date.now();
-  if (new Date(row.expires_at).getTime() <= now) {
-    q.run('UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?', iso(now), row.token_hash);
-    return null;
-  }
-  if (new Date(row.last_seen_at).getTime() + config.sessionIdleMs <= now) {
-    q.run('UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?', iso(now), row.token_hash);
-    return null;
+
+  if (payload) {
+    const tokenHashValue = hashToken(token);
+
+    // Verificar si fue explícitamente revocada
+    let row = null;
+    try {
+      row = q.get('SELECT * FROM admin_sessions WHERE token_hash = ?', tokenHashValue);
+      if (row && row.revoked_at) {
+        return null;
+      }
+    } catch {}
+
+    // Si SQLite se recreó por reinicio del contenedor, reinsertamos la sesión automáticamente
+    if (!row) {
+      try {
+        q.run(
+          `INSERT OR IGNORE INTO admin_sessions (token_hash, csrf_token, created_at, last_seen_at, expires_at, ip, user_agent, username, user_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          tokenHashValue,
+          payload.csrf,
+          iso(payload.iat || now),
+          iso(now),
+          iso(payload.exp || now + PERSISTENT_SESSION_TTL_MS),
+          req.ip ?? null,
+          (req.get('user-agent') ?? '').slice(0, 400),
+          payload.u || 'yohita',
+          payload.n || 'Yohita',
+        );
+      } catch {}
+    } else if (now - new Date(row.last_seen_at).getTime() > 60_000) {
+      try {
+        q.run('UPDATE admin_sessions SET last_seen_at = ? WHERE token_hash = ?', iso(now), tokenHashValue);
+      } catch {}
+    }
+
+    return {
+      tokenHash: tokenHashValue,
+      csrfToken: payload.csrf,
+      createdAt: iso(payload.iat || now),
+      expiresAt: iso(payload.exp || now + PERSISTENT_SESSION_TTL_MS),
+      lastSeenAt: iso(now),
+      ip: req.ip ?? null,
+      userAgent: req.get('user-agent') ?? '',
+      username: payload.u || 'yohita',
+      userName: payload.n || 'Yohita',
+      role: payload.r || 'admin',
+    };
   }
 
-  // Evita una escritura por request: alcanza con actualizar cada minuto.
-  if (now - new Date(row.last_seen_at).getTime() > 60_000) {
-    q.run('UPDATE admin_sessions SET last_seen_at = ? WHERE token_hash = ?', iso(now), row.token_hash);
-  }
+  // 2. Fallback para sesiones anteriores basadas sólo en tabla SQLite
+  try {
+    const row = q.get('SELECT * FROM admin_sessions WHERE token_hash = ? AND revoked_at IS NULL', hashToken(token));
+    if (!row) return null;
 
-  return {
-    tokenHash: row.token_hash,
-    csrfToken: row.csrf_token,
-    createdAt: row.created_at,
-    expiresAt: row.expires_at,
-    lastSeenAt: row.last_seen_at,
-    ip: row.ip,
-    userAgent: row.user_agent,
-    username: row.username || 'yohita',
-    userName: row.user_name || 'Yohita',
-  };
+    if (new Date(row.expires_at).getTime() <= now) {
+      q.run('UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?', iso(now), row.token_hash);
+      return null;
+    }
+
+    if (now - new Date(row.last_seen_at).getTime() > 60_000) {
+      q.run('UPDATE admin_sessions SET last_seen_at = ? WHERE token_hash = ?', iso(now), row.token_hash);
+    }
+
+    return {
+      tokenHash: row.token_hash,
+      csrfToken: row.csrf_token,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      lastSeenAt: row.last_seen_at,
+      ip: row.ip,
+      userAgent: row.user_agent,
+      username: row.username || 'yohita',
+      userName: row.user_name || 'Yohita',
+      role: 'admin',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function clearSession(req, res) {
   const token = readCookie(req);
   if (token) {
-    q.run('UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?', iso(), hashToken(token));
+    try {
+      q.run('UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?', iso(), hashToken(token));
+    } catch {}
   }
   res.clearCookie(COOKIE, cookieOptions(req));
 }

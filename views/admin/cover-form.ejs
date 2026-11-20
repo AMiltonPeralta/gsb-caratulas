@@ -328,6 +328,56 @@ document.addEventListener('DOMContentLoaded', function() {
   form.addEventListener('input', triggerAutoSave);
   form.addEventListener('change', triggerAutoSave);
 
+  // Manejo de envío manual para que nunca te saque de la pantalla si hay error de red
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    clearTimeout(autoSaveTimer);
+    const saveBtn = document.getElementById('btn-save-cover');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
+    }
+    const data = collectFormData();
+    try {
+      localStorage.setItem('gsb_cover_' + CANDIDATE_ID, JSON.stringify(data));
+    } catch (e) {}
+
+    fetch('/admin/candidatos/' + CANDIDATE_ID + '/caratula/autosave', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
+      },
+      body: JSON.stringify(data)
+    })
+    .then(function(res) {
+      if (res.status === 401) {
+        throw new Error('Sesión vencida. Los datos quedaron a salvo en tu pantalla.');
+      }
+      return res.json();
+    })
+    .then(function(res) {
+      if (res.ok) {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado correctamente</span>';
+        if (saveBtn) saveBtn.textContent = '✓ Guardado';
+        window.location.href = '/admin/candidatos/' + CANDIDATE_ID + '?ok=caratula';
+      } else {
+        throw new Error(res.error || 'Error al guardar');
+      }
+    })
+    .catch(function(err) {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar carátula';
+      }
+      if (statusEl) {
+        statusEl.innerHTML = '<span style="color:#ef4444">⚠️ ' + (err.message || 'Error al guardar') + '</span>';
+      }
+      alert('Aviso: ' + (err.message || 'Hubo un problema de conexión. Tus datos están preservados en el formulario.'));
+    });
+  });
+
   // 2. Manejo asíncrono de foto sin recargar la página (así nunca se pierden los campos de texto)
   const photoForm = document.getElementById('gsb-photo-form');
   const photoInput = document.getElementById('photo-file-input');

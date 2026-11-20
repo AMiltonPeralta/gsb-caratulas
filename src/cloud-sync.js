@@ -123,47 +123,63 @@ export function importSnapshot(snapshot) {
  * descarga automáticamente el respaldo persistente desde GitHub para recuperar todos los datos de Yohita.
  */
 export async function initCloudSync() {
+  // 1. Restauración local inmediata si la base de datos está vacía
+  let count = 0;
+  try {
+    const row = q.get('SELECT COUNT(*) as c FROM candidates');
+    count = Number(row?.c || 0);
+  } catch {
+    count = 0;
+  }
+
+  const localBackupFile = path.join(config.root, 'data', 'cloud_backup.json');
+  if (fs.existsSync(localBackupFile)) {
+    try {
+      const localJson = JSON.parse(fs.readFileSync(localBackupFile, 'utf8'));
+      const localBackupCount = localJson.candidates?.length || localJson.tables?.candidates?.length || 0;
+      if (count === 0 || count < localBackupCount) {
+        const restored = importSnapshot(localJson);
+        count = restored;
+        console.log(`[cloud-sync] Restauración desde backup local: ${restored} candidatos inicializados.`);
+      }
+    } catch (err) {
+      console.warn('[cloud-sync] Error leyendo backup local:', err.message);
+    }
+  }
+
   if (!GITHUB_TOKEN) {
-    console.log('[cloud-sync] GITHUB_TOKEN no configurado; persistencia en la nube desactivada.');
+    console.log('[cloud-sync] GITHUB_TOKEN no configurado; persistencia remota desactivada.');
     return;
   }
 
+  // 2. Comprobar / descargar la versión más reciente desde GitHub
   try {
-    // Verificamos si la base local tiene candidatos
-    let count = 0;
-    try {
-      const row = q.get('SELECT COUNT(*) as c FROM candidates');
-      count = Number(row?.c || 0);
-    } catch {
-      count = 0;
-    }
-
-    if (count > 0) {
-      console.log(`[cloud-sync] Base local existente con ${count} candidatos. Listo.`);
-      return;
-    }
-
-    console.log('[cloud-sync] Base local vacía (posible reinicio de Render). Descargando respaldo persistente desde GitHub...');
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'User-Agent': 'GSB-CloudSync',
-        'Accept': 'application/vnd.github.v3+json'
+        'Accept': 'application/vnd.github.raw'
       }
     });
 
     if (!res.ok) {
-      console.log('[cloud-sync] No se encontró respaldo previo en GitHub o repo nuevo (Status:', res.status, ').');
+      console.log('[cloud-sync] No se pudo obtener respaldo remoto (Status:', res.status, ').');
       return;
     }
 
-    const fileData = await res.json();
-    cachedSha = fileData.sha;
-    const jsonStr = Buffer.from(fileData.content, 'base64').toString('utf8');
+    const jsonStr = await res.text();
     const snapshot = JSON.parse(jsonStr);
-    importSnapshot(snapshot);
+    const remoteCandidates = snapshot.candidates?.length || snapshot.tables?.candidates?.length || 0;
+
+    // Si la base local tenía menos candidatos o estaba vacía, aplicamos el snapshot remoto
+    if (count < remoteCandidates || count === 0) {
+      importSnapshot(snapshot);
+      console.log(`[cloud-sync] Sincronización inicial remota completada (${remoteCandidates} candidatos).`);
+    } else {
+      console.log(`[cloud-sync] Base al día (${count} candidatos locales).`);
+    }
   } catch (err) {
-    console.warn('[cloud-sync] Aviso al inicializar sync:', err.message);
+    console.warn('[cloud-sync] Aviso al inicializar sync remoto:', err.message);
   }
 }
 
@@ -188,17 +204,25 @@ export async function performCloudSync() {
     const snapshot = exportSnapshot();
     if (!snapshot) return false;
 
+    const candCount = snapshot.candidates?.length || 0;
+
     // Guardar copia local también
     const localBackupFile = path.join(config.root, 'data', 'cloud_backup.json');
     try {
       fs.writeFileSync(localBackupFile, JSON.stringify(snapshot, null, 2), 'utf8');
     } catch {}
 
+    // Protección crítica: si la base local tiene 0 candidatos, nunca sobreescribir el backup remoto
+    if (candCount === 0) {
+      console.warn('[cloud-sync] Protección: evitando sobreescribir backup remoto con 0 candidatos.');
+      return false;
+    }
+
     const contentB64 = Buffer.from(JSON.stringify(snapshot)).toString('base64');
     const sha = await getRemoteFileSha(BACKUP_PATH);
 
     const body = {
-      message: `respaldo automático [${nowIso()}] · ${snapshot.candidates?.length || 0} candidatos`,
+      message: `respaldo automático [${nowIso()}] · ${candCount} candidatos`,
       content: contentB64,
       ...(sha ? { sha } : {})
     };
@@ -217,12 +241,12 @@ export async function performCloudSync() {
     if (res.ok) {
       const data = await res.json();
       cachedSha = data.content?.sha || null;
-      console.log(`[cloud-sync] Sincronización a la nube OK: ${snapshot.candidates?.length || 0} candidatos respaldados.`);
+      console.log(`[cloud-sync] Sincronización a la nube OK: ${candCount} candidatos respaldados.`);
       return true;
     } else {
       const errText = await res.text();
       console.warn('[cloud-sync] Error subiendo respaldo a GitHub (HTTP', res.status, '):', errText.slice(0, 150));
-      cachedSha = null; // invalidar para pedir SHA fresco la próxima
+      cachedSha = null;
       return false;
     }
   } catch (err) {
