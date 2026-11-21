@@ -28,6 +28,17 @@
     </div>
   </header>
 
+  <div id="local-draft-banner" class="flash flash--info" style="display:none; margin-top:18px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+    <div>
+      <strong>💾 Borrador detectado en este navegador:</strong>
+      <span id="local-draft-info">Tenés campos guardados previamente en esta computadora.</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button type="button" class="btn btn--sm" id="restore-local-draft-btn">Aplicar borrador guardado</button>
+      <button type="button" class="btn btn--ghost btn--sm" id="discard-local-draft-btn">Ocultar</button>
+    </div>
+  </div>
+
   <% if (!completeness.complete) { %>
     <div class="flash flash--warn" style="margin-top:18px">
       <strong>Faltan datos para enviar a firmas:</strong>
@@ -237,30 +248,59 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!form) return;
 
   // 1. Restaurar borrador de localStorage si existe
+  const draftBanner = document.getElementById('local-draft-banner');
+  const restoreDraftBtn = document.getElementById('restore-local-draft-btn');
+  const discardDraftBtn = document.getElementById('discard-local-draft-btn');
+
   try {
     const localDraft = localStorage.getItem('gsb_cover_' + CANDIDATE_ID);
     if (localDraft) {
       const parsed = JSON.parse(localDraft);
       if (parsed && typeof parsed === 'object') {
-        Object.entries(parsed).forEach(function([name, val]) {
-          if (!name || val === undefined) return;
-          const el = form.elements[name];
-          if (!el) return;
-          if (el instanceof RadioNodeList || el.type === 'radio') {
-            const radio = form.querySelector('input[name="' + name + '"][value="' + val + '"]');
-            if (radio) radio.checked = true;
-          } else if (el.type === 'checkbox') {
-            if (Array.isArray(val)) {
-              form.querySelectorAll('input[name="' + name + '"]').forEach(function(cb) {
-                cb.checked = val.includes(cb.value);
-              });
-            } else {
-              el.checked = Boolean(val);
-            }
-          } else if (!el.value && val) {
-            el.value = val;
-          }
+        const filledKeys = Object.keys(parsed).filter(function(k) {
+          const v = parsed[k];
+          return v !== null && v !== undefined && v !== '' && (!Array.isArray(v) || v.length > 0);
         });
+
+        if (filledKeys.length > 0) {
+          if (draftBanner) draftBanner.style.display = 'flex';
+
+          function applyDraft() {
+            Object.entries(parsed).forEach(function([name, val]) {
+              if (!name || val === undefined) return;
+              const el = form.elements[name];
+              if (!el) return;
+              if (el instanceof RadioNodeList || el.type === 'radio') {
+                const radio = form.querySelector('input[name="' + name + '"][value="' + val + '"]');
+                if (radio) radio.checked = true;
+              } else if (el.type === 'checkbox') {
+                if (Array.isArray(val)) {
+                  form.querySelectorAll('input[name="' + name + '"]').forEach(function(cb) {
+                    cb.checked = val.includes(cb.value);
+                  });
+                } else {
+                  el.checked = Boolean(val);
+                }
+              } else if (val) {
+                el.value = val;
+              }
+            });
+            triggerAutoSave();
+            if (draftBanner) {
+              draftBanner.className = 'flash flash--info';
+              draftBanner.innerHTML = '<strong>✓ Borrador aplicado con éxito.</strong> Los datos se sincronizaron con el servidor.';
+              setTimeout(function() { draftBanner.style.display = 'none'; }, 4000);
+            }
+          }
+
+          // Aplicar automáticamente para recuperar cualquier dato no guardado
+          applyDraft();
+
+          if (restoreDraftBtn) restoreDraftBtn.onclick = applyDraft;
+          if (discardDraftBtn) discardDraftBtn.onclick = function() {
+            if (draftBanner) draftBanner.style.display = 'none';
+          };
+        }
       }
     }
   } catch (e) {}
