@@ -35,7 +35,7 @@ import {
   activeSessionCount,
 } from '../auth.js';
 import { totpEnabled, verifyTotp, authenticateUser } from '../passwords.js';
-import { scheduleCloudSync } from '../cloud-sync.js';
+import { scheduleCloudSync, importSnapshot, initCloudSync } from '../cloud-sync.js';
 import { getAssistantResponse } from '../assistant-knowledge.js';
 import { fileHeaders } from '../security.js';
 import {
@@ -224,7 +224,23 @@ router.post('/admin/logout', requireAdmin, requireCsrf, (req, res) => {
 /* ── Panel ─────────────────────────────────────────────────────────────── */
 
 router.get('/admin', requireAdmin, (req, res) => {
-  const candidates = listCandidates().map((c) => ({
+  let rawCandidates = listCandidates();
+  if (rawCandidates.length === 0) {
+    try {
+      const localBackupFile = path.join(config.root, 'data', 'cloud_backup.json');
+      if (fs.existsSync(localBackupFile)) {
+        const localJson = JSON.parse(fs.readFileSync(localBackupFile, 'utf8'));
+        const restored = importSnapshot(localJson);
+        if (restored > 0) {
+          rawCandidates = listCandidates();
+        }
+      }
+    } catch (e) {
+      console.warn('[admin] Error al auto-restaurar backup:', e.message);
+    }
+  }
+
+  const candidates = rawCandidates.map((c) => ({
     ...c,
     status: candidateStatus(c.id),
     statusLabel: CANDIDATE_STATUS_LABEL[candidateStatus(c.id)],
@@ -244,7 +260,23 @@ router.get('/admin', requireAdmin, (req, res) => {
     formatDateTime,
     initials,
     ok: req.query.ok,
+    csrfToken: req.csrfToken?.() || '',
   });
+});
+
+router.post('/admin/api/restaurar-backup', requireAdmin, sameOrigin, requireCsrf, async (req, res) => {
+  try {
+    const localBackupFile = path.join(config.root, 'data', 'cloud_backup.json');
+    if (fs.existsSync(localBackupFile)) {
+      const localJson = JSON.parse(fs.readFileSync(localBackupFile, 'utf8'));
+      importSnapshot(localJson);
+    }
+    await initCloudSync();
+    res.redirect('/admin?ok=backup-restaurado');
+  } catch (err) {
+    console.error('[admin] Error al restaurar backup:', err);
+    res.redirect('/admin?ok=error-restaurar');
+  }
 });
 
 router.get('/admin/candidatos/nuevo', requireAdmin, (req, res) => {
@@ -1142,7 +1174,6 @@ router.post('/admin/candidatos/:id/eliminar', requireAdmin, sameOrigin, requireC
 
   // Si estaba bloqueado por firmas previas pero se fuerza la eliminación
   if (deleted.blocked) {
-    const resAll = deleteAllCandidates({ force: true });
     // deleteCandidate blocked, but we can delete this single candidate with signatures
     q.exec('BEGIN IMMEDIATE');
     try {

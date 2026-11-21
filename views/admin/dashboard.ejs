@@ -24,6 +24,12 @@
   <% if (ok === 'todos-eliminados') { %>
     <div class="flash" style="margin-bottom:18px">Se eliminaron todos los candidatos de la lista y sus archivos asociados.</div>
   <% } %>
+  <% if (ok === 'backup-restaurado') { %>
+    <div class="flash flash--info" style="margin-bottom:18px">✓ Base de datos y candidatos restaurados exitosamente desde la nube.</div>
+  <% } %>
+  <% if (ok === 'error-restaurar') { %>
+    <div class="flash flash--warn" style="margin-bottom:18px">⚠️ No se pudo restaurar el respaldo remoto.</div>
+  <% } %>
 
   <section class="stats" aria-label="Resumen">
     <div class="stat">
@@ -78,7 +84,13 @@
         </div>
         <h3>Todavía no hay candidatos</h3>
         <p>Subí el CV y el agente completa los datos y el resumen. Después generás un link de firma para cada director.</p>
-        <a class="btn" href="/admin/candidatos/nuevo">Cargar candidato</a>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+          <a class="btn" href="/admin/candidatos/nuevo">Cargar candidato</a>
+          <form method="post" action="/admin/api/restaurar-backup" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn--soft" type="submit">Restaurar candidatos de la nube</button>
+          </form>
+        </div>
       </div>
     <% } else { %>
       <div class="cand-list" id="cand-list">
