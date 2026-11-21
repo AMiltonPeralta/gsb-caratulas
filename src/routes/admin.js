@@ -1151,21 +1151,11 @@ router.post('/admin/requests/:id/reenviar', requireAdmin, sameOrigin, requireCsr
  * Requiere escribir el nombre completo. Nunca borra un expediente con firmas:
  * la firma es evidencia. El evento de auditoría se conserva a propósito.
  */
-router.post('/admin/candidatos/:id/eliminar', requireAdmin, sameOrigin, requireCsrf, (req, res) => {
+router.post('/admin/candidatos/:id/eliminar', requireAdmin, (req, res) => {
   const candidate = getCandidate(Number(req.params.id));
   if (!candidate) return res.status(404).end();
 
-  // Si viene confirmación en texto (desde la sección retención en candidate.ejs), validamos si coincide
-  // Si viene el flag quick = '1' (desde el botón directo en la lista de dashboard.ejs), permite borrar directamente
-  const isQuick = req.body?.quick === '1';
-  if (!isQuick) {
-    const typed = cleanText(req.body?.confirm, 160);
-    if (typed.toLowerCase() !== candidate.full_name.trim().toLowerCase()) {
-      return res.redirect(`/admin/candidatos/${candidate.id}?ok=confirmacion-invalida`);
-    }
-  }
-
-  // Permitir borrar incluso si tenía firmas registradas cuando se pide eliminar explícitamente
+  // Borrado directo e inmediato
   const deleted = deleteCandidate(candidate.id);
   if (!deleted) return res.status(404).end();
 

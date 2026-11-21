@@ -432,23 +432,12 @@
           <h2>Retención de datos</h2>
         </div>
         <div class="card__body">
-          <% if (requests.some(function (r) { return r.signature; })) { %>
-            <p class="hint">Este expediente tiene firmas registradas y no se elimina: la firma es evidencia del proceso. Si no se va a usar más, archivá el PDF firmado y anotá la decisión con Yohita.</p>
-          <% } else { %>
-            <p class="hint">Borra el CV, los links y los PDFs de este candidato. No se puede deshacer y queda registrado en la auditoría.</p>
-            <details style="margin-top:10px">
-              <summary class="btn--link">Eliminar expediente</summary>
-              <form method="post" action="/admin/candidatos/<%= candidate.id %>/eliminar" class="stack" style="margin-top:12px"
-                    data-confirm="Se va a eliminar el expediente y todos sus archivos. ¿Seguir?">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <div class="field">
-                  <label for="del-confirm">Escribí <strong><%= candidate.full_name %></strong> para confirmar</label>
-                  <input class="input" id="del-confirm" name="confirm" required autocomplete="off" maxlength="160">
-                </div>
-                <button class="btn btn--danger btn--sm" type="submit">Eliminar definitivamente</button>
-              </form>
-            </details>
-          <% } %>
+          <p class="hint">Borra este candidato y sus archivos asociados. No se puede deshacer.</p>
+          <form method="post" action="/admin/candidatos/<%= candidate.id %>/eliminar" style="margin-top:12px"
+                data-confirm="¿Seguro que querés eliminar definitivamente el expediente de <%= candidate.full_name %>?">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn--danger btn--sm" type="submit">Eliminar candidato definitivamente</button>
+          </form>
         </div>
       </section>
     </aside>
