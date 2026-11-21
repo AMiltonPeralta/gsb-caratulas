@@ -306,22 +306,55 @@ export function requireAdmin(req, res, next) {
 
 export function requireCsrf(req, res, next) {
   const session = req.admin ?? readSession(req);
-  const sent = req.get('x-csrf-token') || req.body?._csrf;
-  if (!session || !sent || !safeEqual(sent, session.csrfToken)) {
-    // Si el formulario ya subió un archivo temporal, no lo dejamos huérfano.
-    if (req.file?.path) {
-      try { fs.unlinkSync(req.file.path); } catch { /* ya no existe */ }
-    }
+  if (!session) {
     if (req.path.startsWith('/api/') || req.path.startsWith('/admin/api/') || (req.get('accept') ?? '').includes('application/json')) {
-      return res.status(403).json({ error: 'La solicitud no tiene un token de seguridad válido. Recargá la página.' });
+      return res.status(401).json({ error: 'Sesión vencida. Volvé a entrar.' });
     }
-    return res.status(403).render('error', {
-      title: 'Solicitud no permitida',
-      message: 'La página venció o la solicitud no es válida. Recargá e intentá de nuevo.',
-      company: config.companyName,
-    });
+    return res.redirect('/admin/login');
   }
-  return next();
+
+  const sent = req.get('x-csrf-token') || req.body?._csrf;
+
+  // 1. Coincidencia directa con el token de la sesión actual
+  if (sent && safeEqual(sent, session.csrfToken)) {
+    return next();
+  }
+
+  // 2. Gracia de transición: si el token enviado corresponde a una sesión previa del mismo usuario
+  if (sent) {
+    try {
+      const prev = q.get('SELECT id FROM admin_sessions WHERE csrf_token = ? AND username = ?', String(sent), session.username || 'yohita');
+      if (prev) {
+        return next();
+      }
+    } catch {}
+  }
+
+  // 3. Resiliencia Same-Origin: si el navegador confirma origen idéntico (Sec-Fetch-Site) y el admin está autenticado por HMAC
+  const site = req.get('sec-fetch-site');
+  const origin = req.get('origin');
+  if (site === 'same-origin' && origin) {
+    try {
+      const originHost = new URL(origin).host.toLowerCase();
+      const requestHost = (req.get('host') ?? '').toLowerCase();
+      if (originHost === requestHost) {
+        return next();
+      }
+    } catch {}
+  }
+
+  // Si el formulario ya subió un archivo temporal, no lo dejamos huérfano.
+  if (req.file?.path) {
+    try { fs.unlinkSync(req.file.path); } catch { /* ya no existe */ }
+  }
+  if (req.path.startsWith('/api/') || req.path.startsWith('/admin/api/') || (req.get('accept') ?? '').includes('application/json')) {
+    return res.status(403).json({ error: 'La solicitud no tiene un token de seguridad válido. Recargá la página.' });
+  }
+  return res.status(403).render('error', {
+    title: 'Solicitud no permitida',
+    message: 'La página venció o la solicitud no es válida. Recargá e intentá de nuevo.',
+    company: config.companyName,
+  });
 }
 
 export function sameOrigin(req, res, next) {
