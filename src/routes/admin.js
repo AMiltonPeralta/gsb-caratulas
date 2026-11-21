@@ -1155,30 +1155,12 @@ router.post('/admin/candidatos/:id/eliminar', requireAdmin, (req, res) => {
   const candidate = getCandidate(Number(req.params.id));
   if (!candidate) return res.status(404).end();
 
-  // Borrado directo e inmediato
-  const deleted = deleteCandidate(candidate.id);
+  // Borrado directo e inmediato (incluyendo firmas asociadas a este candidato)
+  const deleted = deleteCandidate(candidate.id, { force: true });
   if (!deleted) return res.status(404).end();
 
   let removed = 0;
-  let filesToDelete = deleted.files;
-
-  // Si estaba bloqueado por firmas previas pero se fuerza la eliminación
-  if (deleted.blocked) {
-    // deleteCandidate blocked, but we can delete this single candidate with signatures
-    q.exec('BEGIN IMMEDIATE');
-    try {
-      q.run('DELETE FROM signatures WHERE request_id IN (SELECT id FROM signature_requests WHERE candidate_id = ?)', candidate.id);
-      q.run('DELETE FROM signature_requests WHERE candidate_id = ?', candidate.id);
-      q.run('DELETE FROM documents WHERE candidate_id = ?', candidate.id);
-      q.run('DELETE FROM candidates WHERE id = ?', candidate.id);
-      q.run('DELETE FROM signers WHERE id NOT IN (SELECT signer_id FROM signature_requests)');
-      q.exec('COMMIT');
-    } catch (e) {
-      q.exec('ROLLBACK');
-    }
-  }
-
-  for (const file of filesToDelete || []) {
+  for (const file of deleted.files || []) {
     try {
       fs.unlinkSync(file);
       removed += 1;

@@ -98,15 +98,16 @@ export function latestDocument(candidateId, type) {
 }
 
 /**
- * Borra un expediente sin firmas y devuelve los archivos a eliminar del disco.
+ * Borra un expediente y devuelve los archivos a eliminar del disco.
+ * Si force es true, borra también las firmas asociadas a este único candidato.
  * La auditoría NO se borra: es la constancia de que el borrado existió.
  */
-export function deleteCandidate(id) {
+export function deleteCandidate(id, { force = true } = {}) {
   const candidate = getCandidate(id);
   if (!candidate) return null;
 
   const requests = getRequests(id);
-  if (requests.some((r) => r.signature)) {
+  if (!force && requests.some((r) => r.signature)) {
     return { blocked: true, candidate, requests: requests.length };
   }
 
@@ -116,10 +117,17 @@ export function deleteCandidate(id) {
   if (candidate.photo_path) files.add(candidate.photo_path);
   for (const d of documents) if (d.file_path) files.add(d.file_path);
 
+  const signatures = q.all(
+    'SELECT s.signature_image_path FROM signatures s JOIN signature_requests r ON r.id = s.request_id WHERE r.candidate_id = ?',
+    id,
+  );
+  for (const s of signatures) if (s.signature_image_path) files.add(s.signature_image_path);
+
   const signerIds = q.all('SELECT DISTINCT signer_id FROM signature_requests WHERE candidate_id = ?', id).map((r) => r.signer_id);
 
   q.exec('BEGIN IMMEDIATE');
   try {
+    q.run('DELETE FROM signatures WHERE request_id IN (SELECT id FROM signature_requests WHERE candidate_id = ?)', id);
     q.run('DELETE FROM signature_requests WHERE candidate_id = ?', id);
     for (const signerId of signerIds) {
       const still = q.get('SELECT COUNT(*) AS n FROM signature_requests WHERE signer_id = ?', signerId);
