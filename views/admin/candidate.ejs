@@ -36,8 +36,8 @@
   <% } %>
 
   <header class="cand-head">
-    <% if (candidate.photo_path) { %>
-      <img class="thumb cand-head__avatar cand-head__photo" src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+    <% if (candidate.photo_path || candidate.photo_data) { %>
+      <img class="thumb cand-head__avatar cand-head__photo" src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>" style="object-fit:cover">
     <% } else { %>
       <span class="thumb cand-head__avatar"><%= initials(candidate.full_name) %></span>
     <% } %>
@@ -47,12 +47,12 @@
     </div>
     <div class="cand-head__actions">
       <% if (!isRejected) { %>
-        <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula">Editar carátula GSB</a>
+        <a class="btn btn--sm" href="/admin/candidatos/<%= candidate.id %>/caratula" style="background:#0f172a;color:#fff;font-weight:600">Editar carátula GSB</a>
         <a class="btn btn--soft btn--sm" href="/admin/candidatos/<%= candidate.id %>/informe-entrevista">Informe de entrevista</a>
       <% } %>
       <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver PDF</a>
       <% if (requests.some(function (r) { return r.signature; })) { %>
-        <a class="btn btn--sm" href="/admin/candidatos/<%= candidate.id %>/firmado.pdf">Descargar PDF firmado</a>
+        <a class="btn btn--sm" href="/admin/candidatos/<%= candidate.id %>/firmado.pdf" style="background:#16a34a;color:#fff;font-weight:600">Descargar PDF firmado</a>
       <% } %>
       <span class="pill pill--<%= status %>" style="align-self:center"><%= statusLabel %></span>
     </div>
@@ -97,8 +97,8 @@
           <% } %>
           <div class="gsb-summary">
             <div class="gsb-summary__photo">
-              <% if (candidate.photo_path) { %>
-                <img src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>">
+              <% if (candidate.photo_path || candidate.photo_data) { %>
+                <img src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>" style="object-fit:cover">
               <% } else { %>
                 <span class="gsb-summary__empty">Sin foto</span>
               <% } %>

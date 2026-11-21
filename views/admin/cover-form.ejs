@@ -16,7 +16,11 @@
   <% if (ok === 'foto-invalida') { %><div class="flash flash--warn" style="margin-top:18px">La foto tiene que ser JPG o PNG de hasta 5 MB.</div><% } %>
 
   <header class="cand-head">
-    <span class="thumb cand-head__avatar"><%= candidate.full_name.slice(0, 1).toUpperCase() %></span>
+    <% if (candidate.photo_path || candidate.photo_data) { %>
+      <img class="thumb cand-head__avatar cand-head__photo" src="/admin/candidatos/<%= candidate.id %>/foto" alt="Foto de <%= candidate.full_name %>" style="object-fit:cover">
+    <% } else { %>
+      <span class="thumb cand-head__avatar"><%= candidate.full_name.slice(0, 1).toUpperCase() %></span>
+    <% } %>
     <div>
       <h1>Carátula de Ingreso GSB</h1>
       <p class="cand-head__meta">Completá los datos que faltan del CV. La carátula se guarda automáticamente en tiempo real.</p>
@@ -236,6 +240,21 @@
       <button class="btn" id="btn-save-cover" type="submit">Guardar carátula</button>
     </div>
   </form>
+
+  <!-- Barra flotante inferior de acciones para mayor comodidad al llenar -->
+  <div class="sticky-save-bar" id="sticky-save-bar">
+    <div class="container sticky-save-bar__inner">
+      <div class="sticky-save-bar__status" id="sticky-save-status">
+        <span class="status-dot"></span>
+        <span id="sticky-status-text">Guardado automático activo</span>
+      </div>
+      <div class="sticky-save-bar__actions">
+        <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>">Volver al expediente</a>
+        <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= candidate.id %>/pdf" target="_blank" rel="noopener">Ver PDF</a>
+        <button class="btn btn--sm" type="button" id="sticky-save-btn" style="background:#0f172a;color:#fff;font-weight:700">Guardar carátula</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script nonce="<%= typeof cspNonce !== 'undefined' ? cspNonce : '' %>">
@@ -330,6 +349,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   let autoSaveTimer = null;
+  const stickySaveBtn = document.getElementById('sticky-save-btn');
+  const stickyStatusText = document.getElementById('sticky-status-text');
+
+  if (stickySaveBtn) {
+    stickySaveBtn.addEventListener('click', function() {
+      form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+  }
+
   function triggerAutoSave() {
     const data = collectFormData();
     try {
@@ -338,6 +366,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (statusEl) {
       statusEl.innerHTML = '<span style="color:#d97706">⏳ Guardando automáticamente...</span>';
+    }
+    if (stickyStatusText) {
+      stickyStatusText.textContent = 'Guardando cambios...';
+      stickyStatusText.style.color = '#d97706';
     }
 
     clearTimeout(autoSaveTimer);
@@ -353,13 +385,23 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .then(function(res) { return res.json(); })
       .then(function(res) {
-        if (res.ok && statusEl) {
-          statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado automático (' + (res.savedAt || 'activo') + ')</span>';
+        if (res.ok) {
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado automático (' + (res.savedAt || 'activo') + ')</span>';
+          }
+          if (stickyStatusText) {
+            stickyStatusText.textContent = 'Guardado automático (' + (res.savedAt || 'activo') + ')';
+            stickyStatusText.style.color = '#16a34a';
+          }
         }
       })
       .catch(function() {
         if (statusEl) {
           statusEl.innerHTML = '<span style="color:#ef4444">⚠️ Error al autoguardar (se reintentará)</span>';
+        }
+        if (stickyStatusText) {
+          stickyStatusText.textContent = 'Error al autoguardar';
+          stickyStatusText.style.color = '#ef4444';
         }
       });
     }, 1000);
@@ -376,6 +418,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveBtn) {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Guardando...';
+    }
+    if (stickySaveBtn) {
+      stickySaveBtn.disabled = true;
+      stickySaveBtn.textContent = 'Guardando...';
     }
     const data = collectFormData();
     try {
@@ -401,6 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (res.ok) {
         if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✓ Guardado correctamente</span>';
         if (saveBtn) saveBtn.textContent = '✓ Guardado';
+        if (stickySaveBtn) stickySaveBtn.textContent = '✓ Guardado';
         window.location.href = '/admin/candidatos/' + CANDIDATE_ID + '?ok=caratula';
       } else {
         throw new Error(res.error || 'Error al guardar');
@@ -411,8 +458,16 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Guardar carátula';
       }
+      if (stickySaveBtn) {
+        stickySaveBtn.disabled = false;
+        stickySaveBtn.textContent = 'Guardar carátula';
+      }
       if (statusEl) {
         statusEl.innerHTML = '<span style="color:#ef4444">⚠️ ' + (err.message || 'Error al guardar') + '</span>';
+      }
+      if (stickyStatusText) {
+        stickyStatusText.textContent = 'Error al guardar';
+        stickyStatusText.style.color = '#ef4444';
       }
       alert('Aviso: ' + (err.message || 'Hubo un problema de conexión. Tus datos están preservados en el formulario.'));
     });

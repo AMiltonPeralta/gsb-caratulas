@@ -1053,3 +1053,51 @@
     text-align: center;
   }
 }
+
+/* Barra flotante inferior de guardado para carátula */
+.sticky-save-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border, #e2e8f0);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  padding: 10px 0;
+  z-index: 99;
+  margin-top: 24px;
+}
+
+.sticky-save-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sticky-save-bar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.sticky-save-bar__status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+}
+
+.sticky-save-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

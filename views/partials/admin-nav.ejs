@@ -1,21 +1,21 @@
 <header class="topbar">
   <div class="container topbar__inner">
     <a class="brand" href="/admin">
-      <span class="brand__mark">YC</span>
+      <span class="brand__mark" style="background:#c8102e;color:#fff;font-weight:900;letter-spacing:0.5px">GSB</span>
       <span>
-        Carátulas
-        <span class="brand__sub">Firma electrónica del directorio</span>
+        Grúas San Blas
+        <span class="brand__sub">Carátulas & Firma Digital</span>
       </span>
     </a>
     <nav class="nav" aria-label="Principal">
       <a href="/admin" <%= typeof active !== 'undefined' && active === 'panel' ? 'aria-current="page"' : '' %>>Panel</a>
-      <a href="/admin/candidatos/nuevo" <%= typeof active !== 'undefined' && active === 'nuevo' ? 'aria-current="page"' : '' %>>Nuevo candidato</a>
+      <a href="/admin/candidatos/nuevo" <%= typeof active !== 'undefined' && active === 'nuevo' ? 'aria-current="page"' : '' %>>+ Nuevo candidato</a>
       <a href="/admin/auditoria" <%= typeof active !== 'undefined' && active === 'auditoria' ? 'aria-current="page"' : '' %>>Auditoría</a>
       <a href="/admin/seguridad" <%= typeof active !== 'undefined' && active === 'seguridad' ? 'aria-current="page"' : '' %>>Seguridad</a>
     </nav>
-    <div class="topbar__right" style="display:flex;align-items:center;gap:10px">
-      <div style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text, #334155)">
-        <span class="avatar" title="<%= adminName %>" style="width:28px;height:28px;font-size:12px;display:inline-flex;align-items:center;justify-content:center"><%= adminName.slice(0, 1).toUpperCase() %></span>
+    <div class="topbar__right" style="display:flex;align-items:center;gap:12px">
+      <div style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text, #334155);background:var(--bg-soft, #f8fafc);padding:4px 10px;border-radius:20px;border:1px solid var(--border, #e2e8f0)">
+        <span class="avatar" title="<%= adminName %>" style="width:24px;height:24px;font-size:11px;background:#c8102e;color:#fff;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700"><%= adminName.slice(0, 1).toUpperCase() %></span>
         <span><%= adminName %></span>
       </div>
       <form method="post" action="/admin/logout">

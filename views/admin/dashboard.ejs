@@ -66,15 +66,6 @@
         <input class="input" type="search" id="cand-search" placeholder="Buscar por nombre o puesto…" aria-label="Buscar candidato">
       </div>
       <span class="tiny muted" id="cand-count"><%= candidates.length %> <%= candidates.length === 1 ? 'candidato' : 'candidatos' %></span>
-      <% if (candidates.length > 0) { %>
-        <form method="post" action="/admin/candidatos/vaciar-todos" style="margin-left:auto" data-confirm="¿Seguro que querés vaciar la lista y eliminar todos los candidatos acumulados? Esta acción no se puede deshacer.">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn--danger btn--sm" type="submit" title="Borrar todos los candidatos de la lista">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="vertical-align:-1px;margin-right:3px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Vaciar lista
-          </button>
-        </form>
-      <% } %>
     </div>
 
     <% if (candidates.length === 0) { %>
@@ -85,7 +76,7 @@
         <h3>Todavía no hay candidatos</h3>
         <p>Subí el CV y el agente completa los datos y el resumen. Después generás un link de firma para cada director.</p>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap">
-          <a class="btn" href="/admin/candidatos/nuevo">Cargar candidato</a>
+          <a class="btn" href="/admin/candidatos/nuevo">+ Cargar candidato</a>
           <form method="post" action="/admin/api/restaurar-backup" style="display:inline">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="btn btn--soft" type="submit">Restaurar candidatos de la nube</button>
@@ -97,9 +88,15 @@
         <% candidates.forEach(function (c) { %>
           <div class="cand-row" data-search="<%= (c.full_name + ' ' + c.position).toLowerCase() %>">
             <div class="cand-row__main">
-              <span class="thumb"><%= initials(c.full_name) %></span>
+              <% if (c.photo_data) { %>
+                <img src="<%= c.photo_data %>" alt="<%= c.full_name %>" class="thumb" style="object-fit:cover;border-radius:8px">
+              <% } else if (c.photo_path) { %>
+                <img src="/admin/candidatos/<%= c.id %>/foto" alt="<%= c.full_name %>" class="thumb" style="object-fit:cover;border-radius:8px" onerror="this.onerror=null;this.replaceWith(document.createTextNode('<%= initials(c.full_name) %>'))">
+              <% } else { %>
+                <span class="thumb"><%= initials(c.full_name) %></span>
+              <% } %>
               <div style="min-width:0">
-                <div class="cand-row__name"><%= c.full_name %></div>
+                <div class="cand-row__name" style="font-weight:600"><%= c.full_name %></div>
                 <div class="cand-row__meta"><%= c.position %><% if (c.client) { %> · <%= c.client %><% } %></div>
               </div>
             </div>
@@ -116,7 +113,9 @@
             <div><span class="pill pill--<%= c.status %>"><%= c.statusLabel %></span></div>
             <div class="cand-row__date"><%= formatDateTime(c.created_at) %></div>
             <div class="cand-row__action" style="display:flex;gap:6px;align-items:center">
-              <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= c.id %>">Abrir</a>
+              <a class="btn btn--sm" href="/admin/candidatos/<%= c.id %>/caratula" style="background:#0f172a;color:#fff;font-weight:600">Editar carátula</a>
+              <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= c.id %>" title="Ver expediente">Expediente</a>
+              <a class="btn btn--ghost btn--sm" href="/admin/candidatos/<%= c.id %>/pdf" target="_blank" rel="noopener" title="Ver carátula en PDF">PDF</a>
               <form method="post" action="/admin/candidatos/<%= c.id %>/eliminar" style="display:inline;margin:0" data-confirm="¿Seguro que querés eliminar el expediente de <%= c.full_name %>?">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="quick" value="1">
