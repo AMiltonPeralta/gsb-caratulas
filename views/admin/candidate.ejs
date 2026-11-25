@@ -26,6 +26,8 @@
       <% if (ok === 'rol-ocupado') { %>Ese rol ya tiene una firma o un link activo en esta carátula. Elegí otro rol o anulá el link existente.<% } %>
       <% if (ok === 'sin-nombre') { %>Escribí el nombre del firmante para generar el link.<% } %>
       <% if (ok === 'rechazado') { %>Este candidato fue rechazado por el Directorio: no se pueden generar ni reactivar links, ni editar la carátula.<% } %>
+      <% if (ok === 'cv-subido') { %>CV adjuntado correctamente. Todos los datos que ya cargaste en la carátula y el informe se mantuvieron intactos.<% } %>
+      <% if (ok === 'cv-invalido') { %>El archivo del CV tiene que ser un PDF, JPG o PNG válido.<% } %>
     </div>
   <% } %>
   <% if (typeof aviso !== 'undefined' && aviso === 'revisar') { %>
@@ -199,7 +201,7 @@
 
             <% if (r.effective_status === 'signed') { %>
               <div style="margin:10px 0;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;display:flex;align-items:center;gap:12px">
-                <img src="/admin/candidatos/<%= candidate.id %>/firma/<%= r.signature.id %>.png" alt="Firma de <%= r.signer.name %>" style="max-height:48px;max-width:160px;object-fit:contain;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px">
+                <img src="/admin/candidatos/<%= candidate.id %>/firma/<%= r.signature.id %>.png" alt="Firma de <%= r.signer.name %>" style="max-height:48px;max-width:160px;object-fit:contain;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px" onerror="this.style.display='none'">
                 <div style="font-size:12px;color:var(--muted)">
                   <strong style="color:var(--ink);display:block">✓ Firma registrada</strong>
                   <span><%= formatDateTime(r.signature.signed_at) %><% if (dniDisplay) { %> · DNI <%= dniDisplay %><% } %></span>
@@ -363,7 +365,7 @@
           <h2>Documentos</h2>
         </div>
         <div class="card__body docs">
-          <% if (candidate.cv_file_path) { %>
+          <% if (candidate.cv_file_path || candidate.cv_file_data) { %>
             <div class="doc">
               <span class="doc__icon">CV</span>
               <div>
@@ -374,6 +376,19 @@
             </div>
           <% } else { %>
             <p class="note">Sin CV adjunto.</p>
+          <% } %>
+          <% if (!isRejected) { %>
+            <form method="post" action="/admin/candidatos/<%= candidate.id %>/cv" enctype="multipart/form-data" style="margin:8px 0 4px;padding:10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:4px">
+                <%= (candidate.cv_file_path || candidate.cv_file_data) ? 'Reemplazar archivo del CV' : 'Adjuntar archivo del CV' %>
+              </div>
+              <p class="hint" style="margin:0 0 8px;font-size:11.5px">Sube el PDF del CV sin sobrescribir ni borrar ningún dato ya cargado.</p>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input class="input" type="file" name="cv" accept="application/pdf,image/png,image/jpeg" required style="flex:1;min-width:180px;font-size:12px;padding:4px 6px">
+                <button class="btn btn--soft btn--sm" type="submit">Subir solo CV</button>
+              </div>
+            </form>
           <% } %>
           <div class="doc">
             <span class="doc__icon">PDF</span>

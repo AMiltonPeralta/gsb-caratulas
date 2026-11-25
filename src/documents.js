@@ -35,6 +35,8 @@ export async function renderCandidatePdf(candidateId, { persist = false, type = 
           document_hash: r.signature.document_hash,
           signature_hash: r.signature.signature_hash,
           signature_image_path: r.signature.signature_image_path,
+          signature_image_data: r.signature.signature_image_data,
+          dni: r.signature.dni,
         }
       : null,
   }));

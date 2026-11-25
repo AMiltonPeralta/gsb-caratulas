@@ -93,9 +93,9 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Volver al expediente
       </a>
-      <button class="btn btn--primary btn--sm" type="button" onclick="saveInterviewReport(false)">Guardar cambios</button>
-      <button class="btn btn--soft btn--sm" type="button" onclick="window.print()">Imprimir / Guardar PDF (A4)</button>
-      <button class="btn btn--ghost btn--sm" type="button" onclick="copyReport()">Copiar resumen</button>
+      <button class="btn btn--primary btn--sm" type="button" id="btn-save-report">Guardar cambios</button>
+      <button class="btn btn--soft btn--sm" type="button" id="btn-print-report">Imprimir / Guardar PDF (A4)</button>
+      <button class="btn btn--ghost btn--sm" type="button" id="btn-copy-report">Copiar resumen</button>
       <span id="save-status" class="tiny" style="align-self:center;margin-left:auto;font-size:11.5px;font-weight:600"></span>
     </div>
 
@@ -390,6 +390,29 @@ function initInterview() {
     });
   }
 
+  const compContainer = document.getElementById('i-competencies');
+  if (compContainer) {
+    compContainer.addEventListener('click', e => {
+      const btn = e.target.closest('.qbtn[data-comp][data-q]');
+      if (!btn) return;
+      chooseComp(btn.dataset.comp, Number(btn.dataset.q));
+    });
+    compContainer.addEventListener('input', e => {
+      const ta = e.target.closest('textarea[data-comp]');
+      if (!ta) return;
+      putComp(ta.dataset.comp, 'answer', ta.value);
+    });
+    compContainer.addEventListener('change', e => {
+      const sel = e.target.closest('select[data-comp]');
+      if (!sel) return;
+      putComp(sel.dataset.comp, 'grade', sel.value);
+    });
+  }
+
+  document.getElementById('btn-save-report')?.addEventListener('click', () => saveInterviewReport(false));
+  document.getElementById('btn-print-report')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-copy-report')?.addEventListener('click', () => copyReport());
+
   drawCompetencies();
   renderReport();
 
@@ -410,15 +433,15 @@ function drawCompetencies() {
         <span class="chip">${key.startsWith('C')?'Cardinal':key.startsWith('L')?'Liderazgo':'Específica'}</span>
       </div>
       <div class="questions">
-        ${c.questions.map((q, i) => `<button class="qbtn ${d.choice === i ? 'active' : ''}" type="button" onclick="chooseComp('${key}', ${i})"><b>${['Media','Alta','Compleja'][i]}</b><br>${esc(q)}</button>`).join('')}
+        ${c.questions.map((q, i) => `<button class="qbtn ${d.choice === i ? 'active' : ''}" type="button" data-comp="${key}" data-q="${i}"><b>${['Media','Alta','Compleja'][i]}</b><br>${esc(q)}</button>`).join('')}
       </div>
       <div class="qtext"><b>Pregunta orientativa:</b> ${esc(c.questions[d.choice])}</div>
       <label>Respuesta y ejemplo real (Situación · Acción · Resultado)</label>
-      <textarea rows="2" oninput="putComp('${key}','answer',this.value)" placeholder="Registrar hechos y participación">${esc(d.answer)}</textarea>
+      <textarea rows="2" data-comp="${key}" placeholder="Registrar hechos y participación">${esc(d.answer)}</textarea>
       <div class="ig" style="margin-top:7px">
         <div>
           <label>Grado GSB</label>
-          <select onchange="putComp('${key}','grade',this.value)">
+          <select data-comp="${key}">
             <option ${d.grade === 'PV' ? 'selected' : ''}>PV</option>
             ${['A','B','C','D'].map(v => `<option ${d.grade === v ? 'selected' : ''}>${v}</option>`).join('')}
           </select>

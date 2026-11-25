@@ -513,10 +513,20 @@ async function embedSignatures(pdf, requests) {
   const map = new Map();
   for (const request of requests) {
     const signature = request.signature;
-    if (!signature?.signature_image_path) continue;
-    if (!fs.existsSync(signature.signature_image_path)) continue;
+    if (!signature) continue;
+    let bytes = null;
+    if (signature.signature_image_data) {
+      try {
+        bytes = Buffer.from(signature.signature_image_data, 'base64');
+      } catch {}
+    } else if (signature.signature_image_path && fs.existsSync(signature.signature_image_path)) {
+      try {
+        bytes = fs.readFileSync(signature.signature_image_path);
+      } catch {}
+    }
+    if (!bytes) continue;
     try {
-      map.set(request.id, await pdf.embedPng(fs.readFileSync(signature.signature_image_path)));
+      map.set(request.id, await pdf.embedPng(bytes));
     } catch {
       /* firma ilegible */
     }
@@ -525,10 +535,10 @@ async function embedSignatures(pdf, requests) {
 }
 
 function drawSection1(layout, candidate, gsb, photo) {
-  section(layout, 1, 'Datos del postulante', 158, ({ page, x, y, w }) => {
+  section(layout, 1, 'Datos del postulante', 188, ({ page, x, y, w }) => {
     // Foto del ingreso
     const photoW = 92;
-    const photoH = 118;
+    const photoH = 136;
     page.drawRectangle({
       x,
       y: y - photoH + 6,
@@ -601,7 +611,7 @@ function drawSection1(layout, candidate, gsb, photo) {
           });
         });
       }
-      rowY -= 16.4;
+      rowY -= 21.5;
     }
   });
 }
@@ -651,7 +661,7 @@ function drawSection2(layout, gsb) {
 }
 
 function drawSection3(layout, gsb) {
-  section(layout, 3, 'Condiciones de contratación', 128, ({ page, x, y, w }) => {
+  section(layout, 3, 'Condiciones de contratación', 142, ({ page, x, y, w }) => {
     const gap = 8;
     const colW = (w - gap * 2) / 3;
     const fields = [
@@ -670,7 +680,7 @@ function drawSection3(layout, gsb) {
       const row = Math.floor(index / 3);
       const box = {
         x: x + col * (colW + gap),
-        y: y - row * 17.4,
+        y: y - row * 22,
         w: colW,
         label: field[0],
         value: field[1],
@@ -679,7 +689,7 @@ function drawSection3(layout, gsb) {
       else drawField(page, { ...box, accent: index === 8 });
     });
 
-    const obsY = y - 3 * 17.4 - 2;
+    const obsY = y - 3 * 22 - 2;
     page.drawText('OBSERVACIONES', { x, y: obsY, size: 5.2, font: page.bold, color: MUTED });
     page.drawRectangle({
       x,
@@ -953,18 +963,19 @@ function drawInterviewReport(layout, candidate) {
   page.drawText('COMPETENCIAS EVALUADAS', { x: MARGIN, y: layout.y, size: 7.2, font: bold, color: RED });
   layout.y -= 12;
 
-  const compEntries = Object.entries(comps).filter(([_, c]) => c.answer && c.answer.trim());
+  const compEntries = Object.entries(comps).filter(([_, c]) => c && ((c.answer && c.answer.trim()) || (c.grade && c.grade !== 'PV')));
   if (compEntries.length) {
-    for (const [k, c] of compEntries.slice(0, 7)) {
+    for (const [k, c] of compEntries.slice(0, 11)) {
+      layout.ensure(16);
       const g = c.grade || 'PV';
       const label = `${k} [${g}]: `;
-      const ans = fit(c.answer, font, 7.2, CONTENT_W - 45);
-      page.drawText(label, { x: MARGIN, y: layout.y, size: 7.2, font: bold, color: INK });
-      page.drawText(ans, { x: MARGIN + 42, y: layout.y, size: 7.2, font, color: MUTED });
+      const ans = fit(c.answer && c.answer.trim() ? c.answer : 'Evaluada (sin observaciones)', layout.font, 7.2, CONTENT_W - 48);
+      layout.page.drawText(label, { x: MARGIN, y: layout.y, size: 7.2, font: layout.bold, color: INK });
+      layout.page.drawText(ans, { x: MARGIN + 44, y: layout.y, size: 7.2, font: layout.font, color: MUTED });
       layout.y -= 11;
     }
   } else {
-    page.drawText('Sin competencias registradas con respuesta.', { x: MARGIN, y: layout.y, size: 7.2, font, color: MUTED });
+    layout.page.drawText('Sin competencias registradas con respuesta.', { x: MARGIN, y: layout.y, size: 7.2, font: layout.font, color: MUTED });
     layout.y -= 11;
   }
 
@@ -1085,16 +1096,29 @@ export async function buildCaratulaPdf({ candidate, requests, template = config.
 
   // 1. CARÁTULA (Página 1 ya dibujada arriba)
   // 2. CV ENTERO (tal cual como se sube)
-  if (candidate.cv_file_path && fs.existsSync(candidate.cv_file_path)) {
-    const ext = candidate.cv_file_path.toLowerCase().split('.').pop();
+  let cvBytes = null;
+  let cvExt = (candidate.cv_file_path || candidate.cv_original_name || '').toLowerCase().split('.').pop();
+  if (candidate.cv_file_data) {
     try {
-      if (ext === 'pdf') {
-        const cvDoc = await PDFDocument.load(fs.readFileSync(candidate.cv_file_path), { ignoreEncryption: true });
+      cvBytes = Buffer.from(candidate.cv_file_data, 'base64');
+      if (candidate.cv_mime === 'application/pdf') cvExt = 'pdf';
+      else if (candidate.cv_mime === 'image/png') cvExt = 'png';
+      else if (candidate.cv_mime === 'image/jpeg') cvExt = 'jpg';
+    } catch {}
+  } else if (candidate.cv_file_path && fs.existsSync(candidate.cv_file_path)) {
+    try {
+      cvBytes = fs.readFileSync(candidate.cv_file_path);
+    } catch {}
+  }
+
+  if (cvBytes) {
+    try {
+      if (cvExt === 'pdf') {
+        const cvDoc = await PDFDocument.load(cvBytes, { ignoreEncryption: true });
         const pages = await pdf.copyPages(cvDoc, cvDoc.getPageIndices());
         for (const p of pages) pdf.addPage(p);
-      } else if (['png', 'jpg', 'jpeg'].includes(ext)) {
-        const bytes = fs.readFileSync(candidate.cv_file_path);
-        const img = ext === 'png' ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
+      } else if (['png', 'jpg', 'jpeg'].includes(cvExt)) {
+        const img = cvExt === 'png' ? await pdf.embedPng(cvBytes) : await pdf.embedJpg(cvBytes);
         const imgPage = pdf.addPage(A4);
         const scale = Math.min((A4[0] - MARGIN * 2) / img.width, (A4[1] - MARGIN * 2) / img.height, 1);
         imgPage.drawImage(img, {

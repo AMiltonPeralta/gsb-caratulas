@@ -243,11 +243,13 @@ router.post('/f/:token/firmar', sameOrigin, rateLimit({ windowMs: 10 * 60 * 1000
       .update(png)
       .digest('hex');
 
+    const signatureImageData = png.toString('base64');
     q.run(
-      `INSERT INTO signatures (request_id, signature_image_path, signed_at, ip, user_agent, signature_hash, dni)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO signatures (request_id, signature_image_path, signature_image_data, signed_at, ip, user_agent, signature_hash, dni)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       request.id,
       imagePath,
+      signatureImageData,
       signedAt,
       req.ip ?? null,
       userAgent,

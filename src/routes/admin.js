@@ -327,8 +327,10 @@ router.post(
     }
 
     let cvPath;
+    let cvData = null;
     try {
       cvPath = storeCv(req.file);
+      cvData = fs.readFileSync(cvPath).toString('base64');
     } catch (err) {
       return fail(err.message);
     }
@@ -346,8 +348,8 @@ router.post(
     const { lastInsertRowid: candidateId } = q.run(
       `INSERT INTO candidates
         (full_name, position, area, client, seniority, salary, start_date, linkedin, notes,
-         cv_file_path, cv_original_name, summary_text, summary_source, cover_data_json, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         cv_file_path, cv_original_name, cv_file_data, cv_mime, summary_text, summary_source, cover_data_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       fields.full_name,
       fields.position,
       fields.area || '',
@@ -359,6 +361,8 @@ router.post(
       fields.notes || '',
       cvPath,
       req.file.originalname ?? null,
+      cvData,
+      'application/pdf',
       analysis.summary,
       analysis.summaryProvider,
       JSON.stringify(extra),
@@ -1104,7 +1108,14 @@ router.get('/admin/candidatos/:id/firma/:signatureId.png', requireAdmin, (req, r
       Number(req.params.signatureId),
       candidateId,
     );
-    if (!signature || !fs.existsSync(signature.signature_image_path)) return res.status(404).end();
+    if (!signature) return res.status(404).end();
+    if (signature.signature_image_data) {
+      fileHeaders(res, { type: 'image/png' });
+      return res.send(Buffer.from(signature.signature_image_data, 'base64'));
+    }
+    if (!signature.signature_image_path || !fs.existsSync(signature.signature_image_path)) {
+      return res.status(404).end();
+    }
     fileHeaders(res, { type: 'image/png' });
     return res.sendFile(signature.signature_image_path);
   } catch (err) {
@@ -1208,10 +1219,67 @@ router.post('/admin/candidatos/vaciar-todos', requireAdmin, sameOrigin, requireC
 
 router.get('/admin/candidatos/:id/cv', requireAdmin, (req, res) => {
   const candidate = getCandidate(Number(req.params.id));
-  if (!candidate?.cv_file_path || !fs.existsSync(candidate.cv_file_path)) return res.status(404).send('CV no disponible');
-  fileHeaders(res, { type: 'application/pdf', disposition: `inline; filename="cv-${candidate.id}.pdf"` });
-  res.sendFile(candidate.cv_file_path);
+  if (!candidate) return res.status(404).send('CV no disponible');
+  const mime = candidate.cv_mime || 'application/pdf';
+  const ext = mime === 'image/png' ? 'png' : mime === 'image/jpeg' ? 'jpg' : 'pdf';
+  if (candidate.cv_file_data) {
+    fileHeaders(res, { type: mime, disposition: `inline; filename="cv-${candidate.id}.${ext}"` });
+    return res.send(Buffer.from(candidate.cv_file_data, 'base64'));
+  }
+  if (!candidate.cv_file_path || !fs.existsSync(candidate.cv_file_path)) return res.status(404).send('CV no disponible');
+  fileHeaders(res, { type: mime, disposition: `inline; filename="cv-${candidate.id}.${ext}"` });
+  return res.sendFile(candidate.cv_file_path);
 });
+
+router.post(
+  '/admin/candidatos/:id/cv',
+  requireAdmin,
+  upload.single('cv'),
+  sameOrigin,
+  requireCsrf,
+  wrap(async (req, res) => {
+    const candidate = getCandidate(Number(req.params.id));
+    if (!candidate) return res.status(404).end();
+    if (candidate.rejected_at) {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.redirect(`/admin/candidatos/${candidate.id}?ok=rechazado`);
+    }
+    if (!req.file) {
+      return res.redirect(`/admin/candidatos/${candidate.id}?ok=cv-invalido`);
+    }
+
+    const kind = sniff(req.file.path);
+    if (!kind) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.redirect(`/admin/candidatos/${candidate.id}?ok=cv-invalido`);
+    }
+
+    let cvPath;
+    let cvData = null;
+    const cvMime = kind === 'png' ? 'image/png' : kind === 'jpg' ? 'image/jpeg' : 'application/pdf';
+    try {
+      cvPath = storeCv(req.file);
+      cvData = fs.readFileSync(cvPath).toString('base64');
+    } catch {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.redirect(`/admin/candidatos/${candidate.id}?ok=cv-invalido`);
+    }
+
+    // Solo actualiza el archivo del CV sin pisar ningún dato cargado de la carátula ni del informe.
+    q.run(
+      'UPDATE candidates SET cv_file_path = ?, cv_original_name = ?, cv_file_data = ?, cv_mime = ?, updated_at = ? WHERE id = ?',
+      cvPath,
+      cleanText(req.file.originalname, 200),
+      cvData,
+      cvMime,
+      nowIso(),
+      candidate.id,
+    );
+    audit({ candidateId: candidate.id, event: 'cv_attached', detail: `CV adjuntado sin sobrescribir datos: ${req.file.originalname}`, req });
+    scheduleCloudSync();
+    return res.redirect(`/admin/candidatos/${candidate.id}?ok=cv-subido`);
+  }),
+);
 
 router.get(
   '/admin/candidatos/:id/pdf',

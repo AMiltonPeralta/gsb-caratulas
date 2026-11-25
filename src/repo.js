@@ -24,7 +24,7 @@ export function getRequests(candidateId) {
     .all(
       `SELECT r.*, s.name AS signer_name, s.role AS signer_role, s.scope AS signer_scope,
               s.phone AS signer_phone, s.email AS signer_email, s.dni AS signer_dni,
-              sig.id AS signature_id, sig.signed_at, sig.document_hash, sig.signature_hash, sig.signature_image_path, sig.ip, sig.user_agent, sig.dni AS signature_dni
+              sig.id AS signature_id, sig.signed_at, sig.document_hash, sig.signature_hash, sig.signature_image_path, sig.signature_image_data, sig.ip, sig.user_agent, sig.dni AS signature_dni
        FROM signature_requests r
        JOIN signers s ON s.id = r.signer_id
        LEFT JOIN signatures sig ON sig.request_id = r.id
@@ -43,6 +43,7 @@ export function getRequests(candidateId) {
             document_hash: row.document_hash,
             signature_hash: row.signature_hash,
             signature_image_path: row.signature_image_path,
+            signature_image_data: row.signature_image_data,
             ip: row.ip,
             user_agent: row.user_agent,
             dni: row.signature_dni || row.signer_dni || null,
